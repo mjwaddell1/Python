@@ -2,6 +2,8 @@
 import tkinter as tk
 import requests, json, os
 from datetime import datetime, timedelta
+from pytz import timezone
+
 from tkinter import messagebox
 
 from urllib3.exceptions import InsecureRequestWarning
@@ -12,8 +14,9 @@ left = 10 # leftmost widgets
 top = 20 # top widget
 height = 30  # height per row
 running = 0  # update timer stopped
+haveprices = False
 
-token = 'cl1je1r01qi------------01qinfqoeig'  # finhub free account  # https://finnhub.io/register
+token = 'cl1ujer01qi----------e1r01qinfo7eig'  # finhub free account
 
 def DataChange(*args):  # user entry change, save settings
     try:
@@ -57,7 +60,7 @@ def GetStockHistory(sym):  # stock history
         print(len(j['t']), len(j['c']))
         return {'date': j['t'], 'close': j['c']}
     except Exception as ex:
-        print(ex.message)
+        print(ex)
 
 def Beep():
     import winsound
@@ -65,6 +68,11 @@ def Beep():
     duration = 100 # milliseconds
     for x in range(3):
         winsound.Beep(frequency, duration)
+
+def MarketOpen():
+    tz = timezone('EST')
+    dt = datetime.now(tz)
+    return 9 < dt.hour < 16
 
 def ShowHelp():
     msg = '''
@@ -76,7 +84,7 @@ def ShowHelp():
         Alert Flag: \tFlash main window when alert triggered\n
         <Escape> - Exit
     '''
-    messagebox.showinfo('Stock Alert Help', msg)
+    #messagebox.showinfo('Stock Alert Help', msg)
 
 class StockBlock:  # includes widgets and data for single stock
 
@@ -195,11 +203,15 @@ def StockDelete(*args): # delete empty entries
     DataChange() # save settings
 
 def RunUpdate(): # get all stock prices
-    global afterid
-    mainwin.after(100, lambda: status.set('Last update: ' + datetime.now().strftime('%H:%M:%S')))
-    print('Run Update:', datetime.now())
-    for blk in blklist:
-        blk.GetPrice(False)
+    global afterid, haveprices
+    if haveprices and not MarketOpen():
+        mainwin.after(100, lambda: status.set('Market Closed - ' + datetime.now().strftime('%H:%M:%S')))
+    else:
+        mainwin.after(100, lambda: status.set('Last update: ' + datetime.now().strftime('%H:%M:%S')))
+        print('Run Update:', datetime.now())
+        for blk in blklist:
+            blk.GetPrice(False)
+        haveprices = True
     if running:
         afterid = mainwin.after(60000, RunUpdate) # rerun every minute
 
@@ -259,7 +271,6 @@ mainwin.geometry("335x" + str(len(blklist)*height+height+20))  # WxH window size
 mainwin.minsize(100, top2+200)  # below buttons, can't shrink window smaller
 
 mainwin.after(100, SetStatusPosition)  # must resize first
-
 
 mainwin.bind_all("<Escape>", lambda x: quit()) # escape exits program
 mainwin.mainloop()
