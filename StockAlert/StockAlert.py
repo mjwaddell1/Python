@@ -84,7 +84,7 @@ def ShowHelp():
         Alert Flag: \tFlash main window when alert triggered\n
         <Escape> - Exit
     '''
-    #messagebox.showinfo('Stock Alert Help', msg)
+    messagebox.showinfo('Stock Alert Help', msg)
 
 class StockBlock:  # includes widgets and data for single stock
 
