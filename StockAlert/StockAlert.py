@@ -72,7 +72,7 @@ def Beep():
 def MarketOpen():
     tz = timezone('EST')
     dt = datetime.now(tz)
-    return dt.weekday() < 5 and (9 < dt.hour < 16)  # weekday Monday=0
+    return dt.weekday() < 5 and (9 <= dt.hour < 16)  # weekday Monday=0
 
 def ShowHelp():
     msg = '''
