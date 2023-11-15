@@ -5,27 +5,20 @@ Stock prices (real-time) are retrieved from FinnHub (free account) every minute.
 
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/763c26e8-d6c7-4ab4-bfab-e0c496cd2806)
 
-==== Data fields ====
+Data fields:<br />
+&nbsp;&nbsp;&nbsp; Stock Name:   Stock name to check<br />
+&nbsp;&nbsp;&nbsp; Alert Price:  Price to trigger alert<br />
+&nbsp;&nbsp;&nbsp; Direction:    Alert when price crosses down\up<br />
+&nbsp;&nbsp;&nbsp; Last price:   Stock price at last check<br />
+&nbsp;&nbsp;&nbsp; Percent Gap:  % difference between stock and alert price<br />
+&nbsp;&nbsp;&nbsp; Alert Flag:   Flash main window when alert triggered<br />
+&nbsp;&nbsp;&nbsp; < Escape > - Exit<br />
+<br />
+Click the arrow to reverse cross direction<br />
+To delete a row, clear the stock name and click "Delete Empty"<br />
+Click Start to load stock prices<br />
 
-   Stock Name:   Stock name to check<br/>
-   
-   Alert Price:  Price to trigger alert
-   
-   Direction:    Alert when price crosses down\up
-   
-   Last price:   Stock price at last check
-   
-   Percent Gap:  % difference between stock and alert price
-   
-   Alert Flag:   Flash main window when alert triggered
-   
-   < Escape > - Exit
-
-Click the arrow to reverse cross direction
-To delete a row, clear the stock name and click "Delete Empty"
-Click Start to load stock prices
-
-Settings are automatically saved in StockAlert.dat
+Settings are automatically saved in StockAlert.dat<br />
 
 
 
