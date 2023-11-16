@@ -93,6 +93,10 @@ def GetFinVizStocksTbl(filters=None):  # scrape main table - symbol, name, price
 
 
 # test
-ret = GetFinVizStocksTbl()
+# to get desired filters, go to finviz, set filters and copy filter list from URL
+# https://finviz.com/screener.ashx?v=111&f=sh_opt_option,sh_price_o500,ta_volatility_mo3&r=1
+ret = GetFinVizStocksTbl() # default filters
 print('\n'.join([str(x) for x in ret]))
 print(ret[0]['Ticker'])  # test
+
+ret = GetFinVizStocksTbl('sh_opt_option,sh_price_o500,ta_volatility_mo3')  # set filters
