@@ -24,7 +24,7 @@ def DataChange(*args):  # user entry change, save settings
         with open('StockAlert.dat', 'w') as fd:
             fd.write(str([blk.GetData() for blk in blklist]).replace("'", '"').replace(' {', '\n{'))
     except:
-        pass
+        pass  # don't crash on settings error
 
 def GetStockName(sym):  # company name
     url = f'https://api.finnhub.io/api/v1/search?q={sym}&token='+token
@@ -47,7 +47,7 @@ def GetStockPrice(sym):  # latest price
         print(ex)
         return 0
 
-def GetStockHistory(sym):  # stock history
+def GetStockHistory(sym):  # stock price history
     try:
         dtTo = datetime.now()
         dtFrom = dtTo - timedelta(days=30)  # start 30 days ago (22 mkt days)
@@ -62,14 +62,14 @@ def GetStockHistory(sym):  # stock history
     except Exception as ex:
         print(ex)
 
-def Beep():
+def Beep():  # 3 beeps
     import winsound
     frequency = 2500 # hertz
     duration = 100 # milliseconds
     for x in range(3):
         winsound.Beep(frequency, duration)
 
-def MarketOpen():
+def MarketOpen():  # check if market is open - mon-fri 9-4
     tz = timezone('EST')
     dt = datetime.now(tz)
     return dt.weekday() < 5 and (9 <= dt.hour < 16)  # weekday Monday=0
@@ -130,8 +130,8 @@ class StockBlock:  # includes widgets and data for single stock
                 mainwin.attributes('-topmost', 0)
                 Beep()
                 for ctr in [1, 200, 400]: # flash main window
-                    mainwin.after(ctr, lambda :mainwin.config(bg='red'))
-                    mainwin.after(ctr+100, lambda :mainwin.config(bg='SystemButtonFace')) # default grey
+                    mainwin.after(ctr, lambda :mainwin.config(bg='red')) # set background red
+                    mainwin.after(ctr+100, lambda :mainwin.config(bg='SystemButtonFace')) # back to default grey
 
     def Draw(self): # create\place widgets
         self.entStock = tk.Entry(mainwin, textvariable=self.symbol)
@@ -164,7 +164,7 @@ class StockBlock:  # includes widgets and data for single stock
             self.pctgap.set(gap) # pct diff between price and alert price
             self.CheckAlert()  # set green\red background
         else: # allow gui update then recall same method
-            mainwin.after(100 + self.pos * 20, self.GetPrice)
+            mainwin.after(100 + self.pos * 20, self.GetPrice) # stagger price request
 
     def GetData(self): # for saving to setting file
         datax = {
@@ -176,11 +176,11 @@ class StockBlock:  # includes widgets and data for single stock
         return datax
 
 def StockAdd(*args): # add stock entry to form
-    sbx = StockBlock('GOOG', 100, '0', '>', True, len(blklist))
+    sbx = StockBlock('GOOG', 100, '0', '>', True, len(blklist))  # default
     sbx.Draw()
     blklist.append(sbx)
     mainwin.geometry("335x" + str(len(blklist)*height+height+20))  # WxH
-    mainwin.after(100, SetStatusPosition) # move staus bar to bottom
+    mainwin.after(100, SetStatusPosition) # move status bar to bottom
     DataChange()  # save setting file
 
 def StockDelete(*args): # delete empty entries
@@ -188,12 +188,12 @@ def StockDelete(*args): # delete empty entries
     pos = 0
     idx = 0
     while idx < len(blklist):
-        if blklist[idx].symbol.get():
+        if blklist[idx].symbol.get(): # active symbol
             blklist[idx].pos = pos
             blklist[idx].ReDraw()
             pos += 1
             idx += 1
-        else:
+        else:  # blank symbol
             blklist[idx].pos = 9999  # move off-screen
             blklist[idx].ReDraw()
             del blklist[idx]  # remove reference
@@ -221,7 +221,7 @@ def ToggleRun(*args): # start\stop stock updates
     if afterid:
         mainwin.after_cancel(afterid) # cancel update timer
     if running:
-        afterid = mainwin.after(1000, RunUpdate) # start updates
+        afterid = mainwin.after(1000, RunUpdate) # start updates after 1 second
     # toggle start button appearance
     btnStart['text'] = ['Start', 'Stop'][running]
     btnStart['bg'] = ['lightgreen', 'pink'][running]
