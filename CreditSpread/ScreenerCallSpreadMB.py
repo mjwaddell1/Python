@@ -119,6 +119,7 @@ def GetFinVizStocksTbl(filters=None):  # scrape main table
         if len(stks) >= total:
             print('')
             return stks
+        sleep(0.1)  # must pause between pages
 
 
 ################ Start Stock history
