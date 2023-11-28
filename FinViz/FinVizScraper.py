@@ -90,6 +90,7 @@ def GetFinVizStocksTbl(filters=None):  # scrape main table - symbol, name, price
         if len(stks) >= total:
             print('')
             return stks
+        sleep(0.1)  # must pause between pages
 
 
 # test
