@@ -14,17 +14,42 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 optlogtxt = ""
 
-# get all stock names in US
-sskey = '58f68d4b-XXXXX-04465a80199b'  # https://github.com/yongghongg/stock-symbol
-url = 'https://stock-symbol.herokuapp.com/api/'
-headers = {'x-api-key': sskey}
-params = {'market': 'US'}  # , 'index': index}
-StockInfo = requests.get(url + 'symbols', params=params, headers=headers, verify=False).json()
-with open('C:/Mike/StockList.json', 'w') as f:
-    f.write(str(StockInfo))
+def GetStockNames():
+    # get all stock names in US
+    # https://stock-symbol.herokuapp.com/api/
+    sskey = '58f98d4b-753e-xxxx-b72a-04465a395b'  # https://github.com/yongghongg/stock-symbol
+    url = 'https://stock-symbol.herokuapp.com/api/'
+    headers = {'x-api-key': sskey}
+    params = {'market': 'US'}  # , 'index': index}
+    StockInfo = requests.get(url + 'symbols', params=params, headers=headers, verify=False).json()
+    with open('C:/Mike/StockList.json', 'w') as f:
+        f.write(str(StockInfo))
+    return StockInfo
 
-mbkey = 'yOA0bpDcMjKngTVXXXXXXfLLRayeWK4UGGVjKJn'  # https://mboum.com/api/welcome, free account
+mbkey = 'yOA0bpDZMjKngTV------------------LLRayeWK4UGGfVjKJn'  # https://mboum.com/api/welcome, free account
 
+def GetEconCalendar(endDate):  # from today 12am, to end date 11pm
+    fromDate = str(date.today())  # 2023-12-15
+    if type(endDate) == datetime.date:
+        toDate = str(endDate)  # 2023-12-19
+    else:
+        toDate = endDate  # string 2023-12-19
+    url = 'https://economic-calendar.tradingview.com/events'
+    payload = {
+        'from': f'{fromDate}T00:00:00.000Z',
+        'to': f'{toDate}T23:00:00.000Z',
+        'countries': 'US',
+        'minImportance': 0  # -1,0,1
+    }
+    data = requests.get(url, params=payload).json()
+    days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] # 0-6
+    resp = []
+    for r in data['result']:
+        cmt = '-'
+        if 'comment' in r.keys(): cmt = r['comment']
+        day = days[date.fromisoformat(r['date'][:10]).weekday()]
+        resp.append([r['importance'], r['date'][:10], day, r['title'], cmt])
+    return resp
 
 #  FinViz scraper functions
 def GetFinVizStocksCmt(filters=None):  # scrape comment block
@@ -65,7 +90,6 @@ def GetFinVizStocksCmt(filters=None):  # scrape comment block
             return (stks, prcs)
         pg += len(lst)  # next page
 
-
 def GetRowData(row):  # parse single data row
     cols = row.split('</td><td')  # each column
     data = []
@@ -78,7 +102,6 @@ def GetRowData(row):  # parse single data row
         data.append(dp)
     # return dictionary   # ['AAON', 'AAON Inc.', 64.06, 8.58]
     return {'Ticker': data[0], 'Name': data[1], 'Price': float(data[2]), 'ChangePct': float(data[3])}
-
 
 def GetFinVizStocksTbl(filters=None):  # scrape main table
     if not filters:
@@ -121,16 +144,14 @@ def GetFinVizStocksTbl(filters=None):  # scrape main table
             return stks
         sleep(0.1)  # must pause between pages
 
-
 ################ Start Stock history
 
 stockHist = {}  # {sym=[(timestamp,date,open,close), ...]}
 
-
 def GetStockHistory(sym):  # get history from mboum
     # 1m | 5m | 15m | 30m | 1h | 1d | 1wk | 1mo | 3mo
     iv = '1d'  # 5 yrs data o/h/l/c
-    # url='https://mboum.com/api/v1/hi/history/?symbol=F&interval=1d&diffandsplits=true&apikey=yOA0bpDcMjKngTVrvJG0zXXXXXiTPfLLRayK4UGGfTVjKJn'
+    # url='https://mboum.com/api/v1/hi/history/?symbol=F&interval=1d&diffandsplits=true&apikey=xxxxxx'
     url = 'https://mboum.com/api/v1/hi/history/?symbol=' + sym + '&interval=' + iv + '&diffandsplits=true&apikey=' + mbkey
     hdrs = {
         "User-Agent": "Mozilla/5.0,(Windows NT 10.0; Win64; x64),AppleWebKit/537.36,(KHTML, like Gecko),Chrome/110.0.0.0,Safari/537.36"}
@@ -142,11 +163,11 @@ def GetStockHistory(sym):  # get history from mboum
     hist.sort(key=lambda x: x[0], reverse=True)
     return hist
 
+
 histRange = 250  # one year
 daysToExp = 0  # days to exp - is updated later
 
 ################ End Stock history
-
 
 stockHitRate = {}  # Cache, {(sym,pct)=hitrate}
 
@@ -159,40 +180,36 @@ def GetHitRate(sym, pct):  # closelastday-openfirstday, return hit rate >= pct a
         return stockHitRate[(sym, pct)]
     hitCnt = 0
     for i in range(histRange):
-        if (hist[i][3] - hist[i + daysToExp][2]) / hist[i + daysToExp][
-            2] > pct:  # (close2-open1)/open1, for calls x>pct, put x<pct
+        if (hist[i][3] - hist[i + daysToExp][2]) / hist[i + daysToExp][2] > pct:  # (close2-open1)/open1, for calls x>pct, put x<pct
             hitCnt += 1
     stockHitRate[(sym, pct)] = hitCnt / float(histRange)
     return stockHitRate[(sym, pct)]
 
-
-def GetFridayDate():  # upcoming Friday
-    for d in range(7):  # 0-6
+def GetFridayDate(daycnt = 11):  # latest Friday
+    last = None
+    for d in range(daycnt):  # 0-6 default
         if (date.today() + timedelta(days=d)).weekday() == 4:  # Monday=0, Friday=4
-            return date.today() + timedelta(days=d)  # '2022-02-18'
-
+            last, lastd = date.today() + timedelta(days=d), d
+    return (last, lastd)  # '2022-02-18', 4
 
 def GetThursdayDate():  # upcoming Thursday - Use if Friday is holiday
     for d in range(7):  # 0-6
         if (date.today() + timedelta(days=d)).weekday() == 3:  # Monday=0, Thursday=3, Friday=4
             return date.today() + timedelta(days=d)  # '2022-02-18'
 
-
 def DaysToExp(dy=4):  # days til Friday (4) (Thur if Friday holiday)
     for d in range(7):  # 0-6
         if (date.today() + timedelta(days=d)).weekday() == dy:  # Monday=0, Thursday=3, Friday=4
             return d
-
 
 def printx(*arg):  # print to screen and final log string
     global optlogtxt
     print(*arg)  # print to screen
     optlogtxt += " ".join(str(x) for x in arg) + "\n"  # write to log file at end of script
 
-
 def GetEarningsDay(sym, maxdays):  # future earnings dates (days from today)
     try:
-        url = 'https://www.clicktocontinue.com/getwebdata.asp?https://ab.tradeui.com/api/earnings.php?symbol=' + sym
+        url = 'https://www.xxxx.com/getwebdata.asp?https://ab.tradeui.com/api/earnings.php?symbol=' + sym
         #  [{"symbol":"AMZN","earning_time":"2","earning_date":"2023-08-03","MarketCap":"1406750000000","optionable":"1","last_updated":"2023-07-24 19:20:29"}]
         rsp = requests.get(url, verify=False).json()
         dt = rsp[0]['earning_date']  # next (or most recent) earnings date
@@ -203,7 +220,6 @@ def GetEarningsDay(sym, maxdays):  # future earnings dates (days from today)
     except Exception as ex:
         printx(sym, 'Earnings error:', ex)
         return (-2, 'x')  # error
-
 
 def GetEarningsDayYahoo(sym, maxdays):  # future earnings dates (days from today)
     try:
@@ -216,19 +232,16 @@ def GetEarningsDayYahoo(sym, maxdays):  # future earnings dates (days from today
         # printx(sym, 'Earnings error:', ex)
         return (-2, 'x')  # error
 
-
-def GetCompanyName(sym):  # look up company name from symbol
-    lst = list(filter(lambda x: x['symbol'] == sym, StockInfo['data'][0]['quotes']))
+def GetCompanyName(stockInfo, sym):  # look up company name from symbol
+    lst = list(filter(lambda x: x['symbol'] == sym, stockInfo['data'][0]['quotes']))
     if len(lst):
         return lst[0]['longName']
     else:
         return '<unknown>'  # symbol not found
 
-
 def pct(val, digits=1):  # format percent
     val *= 10 ** (digits + 2)
     return '{1:.{0}f}%'.format(digits, floor(val) / 10 ** digits)
-
 
 # go to FinViz, set filters, copy parameters to list
 # https://finviz.com/screener.ashx?v=171&f=fa_curratio_o1,fa_debteq_u1,fa_netmargin_pos,fa_pb_u5,fa_pfcf_u10,fa_roe_pos,sh_opt_option,sh_price_o10,ta_perf_26wup,ta_sma20_pa,ta_volatility_mo2
@@ -267,7 +280,6 @@ not_used = [  # save for later
     'ta_rsi_ob70',  # RSI(14) overbought 70 - ta_rsi_os30 (oversold 30)
     'ta_change_u1'  # day change up 1% - ta_change_u day change up
 ]
-
 
 # get options chain for specific symbol
 def GetCallOptionsMB(stk):  # MBoum {s['Ticker'], s['Price'], s['Change']}
@@ -316,12 +328,10 @@ def GetCallOptionsMB(stk):  # MBoum {s['Ticker'], s['Price'], s['Change']}
                 return {'sym': sym, 'price': stkprice, 'yprice': stk['Price'], 'ychange': stk['Change'], 'yfprice': -1,
                         'calls': None, 'error': ex}
 
-
 def GetTickerOptionsMB(stks):  # MBoum - stks is [{s['Ticker'], s['Price'], s['Change']},,,,]
     pool = Pool(processes=5)  # limit 5 requests/sec
     results = pool.map(GetCallOptionsMB, stks)
     return results
-
 
 def UpdateStockQuotes(stkdata):  # get real-time quotes MBoum
     rsp = ''
@@ -361,7 +371,6 @@ def UpdateStockQuotes(stkdata):  # get real-time quotes MBoum
         print(url)
         print(rsp)
 
-
 if __name__ == '__main__':
     freeze_support()  # needed for Windows
 
@@ -370,18 +379,17 @@ if __name__ == '__main__':
 
     printx('\nOption Spread Screener -', datetime.now(), '\n')  # current date\time
 
-    expdate = GetFridayDate()  # str(GetThursdayDate())
+    stockInfo = GetStockNames()
+
+    expdate, daysToExp = GetFridayDate()  # str(GetThursdayDate())
     expts = datetime.combine(expdate, datetime.min.time()).replace(tzinfo=timezone.utc).timestamp()
-
-    daysToExp = DaysToExp()
-
-    #  print(GetHitRate('TSLA',0.03))
-    #  quit()
 
     printx('Exp Date:', str(expdate), '   (' + str(int(expts)) + ')')
     printx('Run FinViz screener...')
 
     stock_list = GetFinVizStocksTbl(','.join(filters))
+
+    # stock_list = stock_list[:10]  ####################### testing ########################
 
     printx('\n', len(stock_list), 'Stocks found (FinViz)\n')  # stock count from finviz filter
 
@@ -393,7 +401,8 @@ if __name__ == '__main__':
     MinSpread = 0.50  # minimum premium spread 50 cents (higher is better, etrade commission is $1 per contract (100 shares), 50 cent spread means 2% commission)
     MaxExpDays = 5  # maximum 5 days until expiration (lower is better, focus on weekly options)
     IgnoreStk = ['TNA', 'TQQQ', 'SQQQ', 'UPRO', 'BRZU', 'TECL', 'UDOW', 'NAIL', 'HEI-A', 'MOG-A', 'XLNX', 'FAS', 'UCO',
-                 'GUSH', 'LABU', 'LABD', 'BOIL', 'SOXS', 'KOLD', 'DPST']  # skip leveraged indexes, very volatile, high risk
+                 'GUSH', 'LABU', 'LABD', 'BOIL', 'SOXS', 'KOLD',
+                 'DPST']  # skip leveraged indexes, very volatile, high risk
 
     stks = [{'Ticker': s['Ticker'], 'Price': s['Price'], 'Change': s['ChangePct']} for s in stock_list]  # symbol, price, change only
     stks = list(filter(lambda s: s['Ticker'] not in IgnoreStk, stks))  # remove ignored
@@ -443,18 +452,14 @@ if __name__ == '__main__':
                     if skip: break  # failed earnings check, move to next stock
                     strike = cll['strike']  # option strike price
                     # check if possible short option
-                    if strike >= pr * (1 + MinBuffer) and cll[
-                        'bid'] > MinPremium:  # 5% over price (safety margin), premium > 50 cents
+                    if strike >= pr * (1 + MinBuffer) and cll['bid'] > MinPremium:  # 5% over price (safety margin), premium > 50 cents
                         # scan for possible long option
                         for cll2 in stkcalls:  # scan all calls, ignore calls closer to ATM
                             if cll2['strike'] <= cll['strike']: continue  # closer to ATM
-                            if (cll2['strike'] - cll['strike']) / cll[
-                                'strike'] < MinStrGap: continue  # strikes too close together (if stocks goes ITM, will quickly cross entire spread)
-                            if cll['bid'] - cll2[
-                                'ask'] <= MinSpread: continue  # premium spread must be at least 50 cents
+                            if (cll2['strike'] - cll['strike']) / cll['strike'] < MinStrGap: continue  # strikes too close together (if stocks goes ITM, will quickly cross entire spread)
+                            if cll['bid'] - cll2['ask'] <= MinSpread: continue  # premium spread must be at least 50 cents
                             if cll['bid'] == 0: continue  # useless call
-                            if (cll['bid'] - cll2['ask']) / (
-                                    cll2['strike'] - cll['strike']) >= MinReturn:  # at least 10% return
+                            if (cll['bid'] - cll2['ask']) / (cll2['strike'] - cll['strike']) >= MinReturn:  # at least 10% return
                                 if not disp:  # first option for this stock
                                     # TODO - calc earn date from stock quote > stk['earndate']
                                     earndays, msg = GetEarningsDay(stk['sym'], 10)  # days until earnings call
@@ -464,8 +469,7 @@ if __name__ == '__main__':
                                         break
                                     # print stock data once
                                     # print(stk['sym'], yf.Ticker(stk['sym']).info)
-                                    name = GetCompanyName(
-                                        stk['sym'])  # yf.Ticker(stk['sym']).info['shortName']
+                                    name = GetCompanyName(stockInfo, stk['sym'])  # yf.Ticker(stk['sym']).info['shortName']
                                     printx('++',
                                            stk['sym'].ljust(6),
                                            str("%.1f" % pr).rjust(7),
@@ -488,6 +492,13 @@ if __name__ == '__main__':
                 skip = False  # reset flag
             except Exception as ex:  # error processing data
                 printx(stk['sym'], 'Error:', ex)  # print error, move to next stock
+
+    print('\n-- Economic Events --')
+    evts = GetEconCalendar(expdate)
+    starred = filter(lambda e: e[0] == 1, evts)
+    print('\n'.join([str(x[:-1]).replace('0,','   ').replace('1,','***') for x in starred]))
+    print()
+    print('\n'.join([str(x).replace('0,','   ').replace('1,','***') for x in evts]))
 
     printx('\n -- Done --\n')
 
