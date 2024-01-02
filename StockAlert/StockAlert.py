@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from pytz import timezone
 
 from tkinter import messagebox
+from ctypes import windll
+windll.shcore.SetProcessDpiAwareness(1)  # fix blurry text, may shift text position
 
 from urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
