@@ -3,7 +3,7 @@
 This script loads stock history data from various sources and
   uses the data as input to a neural network for forcasting stock movement
 Spoiler alert: the model did not produce accurate results and has limited predictive value
-> Main script steps:
+- Main script steps:
   Get stock data (daily returns, quarterly earnings\dividends\revenue\profit margin) from web
   Get economic information for training day - stock sector, month, election cycle, yield curve
   Store stock data to json files
