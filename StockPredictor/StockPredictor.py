@@ -617,7 +617,6 @@ predictions = sh['predictions']
 print(len(samples), len(predictions), len(samples[0]))
 sh.close()
 
-quit()
 def ReturnClass(ret): # split stock return into class
     lst = [0,0,0,0,0]
     if ret > 5: lst[0] = 1
