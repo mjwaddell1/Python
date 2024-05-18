@@ -4,8 +4,11 @@ from torch.utils.data import Dataset, DataLoader
 from random import randint, seed
 
 # This is a simple machine learning experiment
+# 100 samples are generated
+# Each sample has 3 inputs: random number, counter, odd\even flag
+# The prediction array is just the odd\even flag
 # Given a 3-input sample including a random value
-#     will the network ignore the random value?
+#     Will the network ignore the random value?
 # Based on several runs, the random value is not ignored and full training is not achieved
 
 seed(123) # repeatable
@@ -16,15 +19,15 @@ def BuildTensors():
     lsty = []
     for i in range(100): # 0-99, 100 samples
         # --- X samples ---
-        # 3 inputs: random number, index, odd\even
+        # 3 inputs: random number, index, odd\even flag
         lstx.append([float(randint(0, 1000)), float(i), float(i%2)])
-        # 3 inputs: all odd\even flag
-        # lstx.append([float(i%2), float(i%3), float(i%2)])
         # 3 inputs: constant, index, odd\even flag
         # lstx.append([0.0, float(i), float(i%2)])
+        # 3 inputs: all odd\even flag
+        # lstx.append([float(i%2), float(i%3), float(i%2)])
 
         # --- Y outputs ---
-        lsty.append(float(i%2)) # odd\even
+        lsty.append(float(i%2)) # odd\even flag
     return torch.tensor(lstx), torch.tensor(lsty)
 
 class Data(Dataset):
