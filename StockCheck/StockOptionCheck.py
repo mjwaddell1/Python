@@ -1,4 +1,6 @@
-import requests, warnings, urllib3, datetime, time, os
+import os
+
+import requests, warnings, urllib3, datetime, time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
@@ -15,21 +17,25 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # suppress S
 # Get stocks that have high positive option sentiment
 # ** Uneven options chart indicates bullish\bearish sentiment
 
-mbkey = 'o6eB0qL4XcBX4tHdyXXXXXXXXXXXXXXXXX1HjNhkfpV5G8Kj96kg'  # https://mboum.com/api/welcome, free account
-sskey = '58f18d4b-XXXXXXXXXX-04465a30199b'  # https://github.com/yongghongg/stock-symbol
+mbkey = 'o6eB0qL4XcBX4tHdxxxxxxxxxxxxxxxxjNhkfpV5G8Kj96kg'  # https://mboum.com/api/welcome, free account
+sskey = '58f18d4b-xxxxxxxxxxx-04465a30199b'  # https://github.com/yongghongg/stock-symbol
+
+logtxt = ''
 
 # this script is part of an hourly task
-# if datetime.datetime.now().weekday() > 4:  # only run on weekdays
-#     print('Market closed.')
-#     quit()  # 0=mon, 5=sat, 6=sun
-#
-# if (datetime.datetime.now().hour <= 15):  # run at market close (after 3pm)
-#     print('Before 3pm')
-#     quit()
-#
-# if (datetime.datetime.now().hour > 17):  # run at market close (before 5pm)
-#     print('After 5pm')
-#     quit()
+if datetime.datetime.now().weekday() > 4:  # only run on weekdays
+    print('Market closed.')
+    quit()  # 0=mon, 5=sat, 6=sun
+
+if (datetime.datetime.now().hour <= 16):  # run at market close (after 4pm)
+    print('Before 4pm')
+    quit()
+
+if (datetime.datetime.now().hour > 17):  # run at market close (before 5pm)
+    print('After 5pm')
+    quit()
+
+# time.sleep(60 * 5) # wait 5 minutes, prevent overlap with stock jump check
 
 def printx(*args):
     global logtxt
@@ -79,7 +85,7 @@ def CreateEarningsChart(title, x1, y1, label1, x2, y2, label2, filename):
     plt.scatter(x, y, label=label1) # actual
     x = np.array(x2)
     y = np.array(y2)
-    plt.scatter(x, y, label=label2) # estimate
+    plt.scatter(x, y, label=label2, marker='*') # estimate
     plt.title(title)
     plt.legend()
     plt.axhline(0, color='grey')
@@ -89,16 +95,14 @@ def CreateEarningsChart(title, x1, y1, label1, x2, y2, label2, filename):
     fig.clf() # clear plot data
     plt.close()
 
-logtxt = ''
-
 def GetEarningHistory(stks): # last 4 quarters actual\estimate
-    print('Get Earnings...')
+    printx('Get Earnings...')
     url = stk = None
     try:
         data = {}
         for stk in stks:
             print('.', end='', flush=True)
-            # https://mboum.com/api/v1/qu/quote/earnings/?symbol=AAPL&apikey=o6eB0qL4XcBX4tHdyrGXXXXXXXXXXXXXXnOpr1HjNhkfpV5G8Kj96kg
+            # https://mboum.com/api/v1/qu/quote/earnings/?symbol=AAPL&apikey=o6eB0qL4XcBX4tHdxxxxxxxxxxxxxxxxOpr1HjNhkfpV5G8Kj96kg
             url = 'https://mboum.com/api/v1/qu/quote/earnings/?symbol=' + stk + '&apikey=' + mbkey
             rsp = requests.get(url, verify=False).json()
             if 'error' in rsp.keys():
@@ -114,9 +118,10 @@ def GetEarningHistory(stks): # last 4 quarters actual\estimate
             keys = sorted(tmp.keys()) # 4 qtrs, latest last
             data[stk] = [tmp[k] for k in keys]
             time.sleep(.1) # mboum has rate limit
+        printx(data)
         return data
     except Exception as ex:
-        print('\nGetEarningHistory', '\n', ex,'\n',url,'\n',stk)
+        printx('\nGetEarningHistory', '\n', ex, '\n', url, '\n', stk)
 
 def GetStockHistory(sym):  # get history from mboum, basic account
     # 1m | 5m | 15m | 30m | 1h | 1d | 1wk | 1mo | 3mo
@@ -381,19 +386,23 @@ def GetFinVizStocksTbl(filters=None):  # FinViz, scrape main table
             return stks
         sleep(0.1)  # must pause between pages
 
-def CalcOptionRatio(stk, xpct,y, pct): # call/put price at pct point
-    # strike won't fall exactly at pct, must interpolate
-    if pct > abs(xpct[0]) or pct > abs(xpct[-1]):
-        printx(stk, 'Option range too small')
-        return 0 # option range too small
-    putpct = callpct = 0
-    for idx in range(len(xpct)-1):
-        if xpct[idx] <= -pct <= xpct[idx+1]:
-            putpct = (-pct-xpct[idx])/(xpct[idx+1]-xpct[idx]) * (y[idx+1]-y[idx]) + y[idx]
-        if xpct[idx] <= pct <= xpct[idx+1]:
-            callpct = (pct-xpct[idx])/(xpct[idx+1]-xpct[idx]) * (y[idx+1]-y[idx]) + y[idx]
-        if putpct and callpct: break # found both
-    return callpct/(putpct+.00001)
+def CalcOptionRatio(stk, xpct, y, pct): # call/put price at pct point
+    try:
+        # strike won't fall exactly at pct, must interpolate
+        if pct > abs(xpct[0]) or pct > abs(xpct[-1]):
+            printx(stk, 'Option range too small')
+            return 0 # option range too small
+        putpct = callpct = 0
+        for idx in range(len(xpct)-1):
+            if xpct[idx] <= -pct <= xpct[idx+1]:
+                putpct = (-pct-xpct[idx])/(xpct[idx+1]-xpct[idx]) * (y[idx+1]-y[idx]) + y[idx]
+            if xpct[idx] <= pct <= xpct[idx+1]:
+                callpct = (pct-xpct[idx])/(xpct[idx+1]-xpct[idx]) * (y[idx+1]-y[idx]) + y[idx]
+            if putpct and callpct: break # found both
+        return callpct/(putpct+.00001)
+    except Exception as ex:
+        printx('ERROR: CalcOptionRatio', stk, ex)
+        return 0
 
 filters = [     # finviz, initial filter for stocks
     'sh_opt_option',     # optionable
@@ -404,101 +413,106 @@ filters = [     # finviz, initial filter for stocks
     # 'fa_epsyoy_pos'      # earnings rise yr/yr
 ]
 
-stknames = GetStockNames() # US market, all stocks
-stock_list = GetFinVizStocksTbl(','.join(filters)) # finviz filter
-# stock_list = stock_list[:15] ####### testing
-if not len(stock_list):
-    printx('No stocks from FinViz') # no recent jumps
-    quit()
+def GetStockName(stk):
+    if stk in stknames:
+        return stknames[stk]
+    return {'name': '-Unknown-', 'exchange': ''}
 
-baselink = 'https://www.google.com/finance/quote/' # for quote link in email
-stock_list = [s['Ticker'] for s in stock_list] # just tickers
-printx(stock_list)
+try:
+    stknames = GetStockNames() # US market, all stocks
+    stock_list = GetFinVizStocksTbl(','.join(filters)) # finviz filter
+    # stock_list = stock_list[:15] ####### testing
+    if not len(stock_list):
+        printx('No stocks from FinViz') # no recent jumps
+        quit()
 
-stock_list = ['VTSI','DFLI','NVDA']  # ########## testing
+    baselink = 'https://www.google.com/finance/quote/' # for quote link in email
+    stock_list = [s['Ticker'] for s in stock_list] # just tickers
+    printx(stock_list)
 
-earnings_all = GetEarningHistory(stock_list) # from mbaum, last 4 quarters
-earnings = {}
-for stke in earnings_all.keys():
-    print(stke, earnings_all[stke])
-    if earnings_all[stke][-1]['estimate'] <= earnings_all[stke][-1]['actual']: # show only positive surprises
-        earnings[stke] = earnings_all[stke]
-# stock_list = list(earnings.keys()) # filter list based on earnings
+    # stock_list = ['VTSI','DFLI','NVDA']  # ########## testing
 
-expdates = GetExpireDates([6,7,8,9]) # 6 month, find first match, some stocks are bi-monthly
+    earnings_all = GetEarningHistory(stock_list) # from mbaum, last 4 quarters
+    earnings = {}
+    for stke in earnings_all.keys():
+        print(stke, earnings_all[stke])
+        if len(earnings_all[stke]) and earnings_all[stke][-1]['estimate'] <= earnings_all[stke][-1]['actual']: # show only positive surprises
+            earnings[stke] = earnings_all[stke]
+    # stock_list = list(earnings.keys()) # filter list based on earnings
 
-printx('Get options...')
-stkdict = {}
-for stk in stock_list:
-    stkdict[stk] = {'stkprice': 0, 'stkchgpct': 0, 'expiration': None, 'options': {}}
-    # print('options', stk, expdates)
-    info,opts = GetOptionsMB(stk, expdates) # get stock quote and option chain
-    # print(info, opts)
-    if not info: continue
-    opts['puts'].sort(key=lambda o:o['strike']) # sort puts from lowest strike price
-    if opts:
-        stkdict[stk].update(info) # update price\price change\expiration
-        exp = info['expiration'] # found exp date
-        stkdict[stk]['options'][str(exp)[:10]] = opts
-    else:
-        printx(stk + ' - No Options')
-    time.sleep(.1) # mboum delay
+    expdates = GetExpireDates([6,7,8,9]) # 6 month, find first match, some stocks are bi-monthly
 
-optionstks = []
+    printx('Get options...')
+    stkdict = {}
+    for stk in stock_list:
+        stkdict[stk] = {'stkprice': 0, 'stkchgpct': 0, 'expiration': None, 'options': {}}
+        # print('options', stk, expdates)
+        info,opts = GetOptionsMB(stk, expdates) # get stock quote and option chain
+        # print(info, opts)
+        if not info: continue
+        opts['puts'].sort(key=lambda o:o['strike']) # sort puts from lowest strike price
+        if opts:
+            stkdict[stk].update(info) # update price\price change\expiration
+            exp = info['expiration'] # found exp date
+            stkdict[stk]['options'][str(exp)[:10]] = opts
+        else:
+            printx(stk + ' - No Options')
+        time.sleep(.1) # mboum delay
 
-# 6 month (or more) options, get market sentiment (check if put/calls more expensive)
+    optionstks = []
 
-for sym in stkdict.keys():
-    stk = stkdict[sym]
-    exp = stk['expiration']
-    price = stk['stkprice']
-    if not price: continue # no options found
-    # merge put and call options into single dataset
-    x = [o['strike'] for o in stk['options'][exp]['puts']]
-    x.extend([o['strike'] for o in stk['options'][exp]['calls']])
-    y = [o['ask']/price*100 for o in stk['options'][exp]['puts']] # option price vs stock price
-    y.extend([o['ask']/price*100 for o in stk['options'][exp]['calls']])
-    xpct = [int((s - price) / price * 100) for s in x] # strike price/stock price
-    if len(y) <= 1: continue
-    optratio = CalcOptionRatio(sym, xpct, y, 20) # call price vs put price 20% from stock price
-    printx(sym, 'ratio', rnd2(optratio))
-    if optratio < 1.75: continue # minimum call/put price ratio
-    optionstks.append(sym)
-    CreateChartImage(f'{sym} ({price}) - Option Spread \nExp {exp}   C/P {rnd2(optratio)}', xpct,y,
-                     'Pct Strike','Pct Price', True,
-                     sym+'_OptionSpread.png', (4,2.5))
+    # 6 month (or more) options, get market sentiment (check if put/calls more expensive)
 
-images = []
-print('Get Stock History\\Build Charts...')
-html = '<html><body><center>'
-stkcnt = 0
-for stk in stock_list:
-    if not stk in optionstks: continue # must have option chart
-    printx(stk)
-    # price line chart
-    hist = GetStockHistory(stk)[-250:] # 1 year
-    CreateChartImage(stk + ' - ' + stknames[stk]['name'], list(range(len(hist))), [p[3] for p in hist],
-                     'Day','Close', False, stk + '.png', None)
-    images.append(stk + '.png') # for email
-    html += f'<br/><img src="cid:{stk}"><br/>\n'
-    # earnings scatter plot
-    if stk in earnings_all.keys():
-        yact = [e['actual'] for e in earnings_all[stk]]
-        yest = [e['estimate'] for e in earnings_all[stk]]
-        xe = list(range(len(yact))) # x axis
-        CreateEarningsChart(stk + ' - Earnings ', xe, yact, 'Act', xe, yest, 'Est', stk+'_Earnings.png')
-        images.append(stk + '_Earnings.png') # for email
-        html += f'<br/><img src="cid:{stk}_Earnings"><br/><br/>\n'
-    # add images to email
-    images.append(stk + '_OptionSpread.png')  # for email
-    html += f'<br/><img src="cid:{stk}_OptionSpread"><br/>\n'
-    html += f'<br/><a href="{baselink}{stk}:{stknames[stk]["exchange"]}" style="font-size:20px;">GoogleFinance {stk}</a><br/>\n'
-    stkcnt += 1
-html += '</center></body></html>'
-printx(html)
+    for sym in stkdict.keys():
+        stk = stkdict[sym]
+        exp = stk['expiration']
+        price = stk['stkprice']
+        if not price: continue # no options found
+        # merge put and call options into single dataset
+        x = [o['strike'] for o in stk['options'][exp]['puts']]
+        x.extend([o['strike'] for o in stk['options'][exp]['calls']])
+        y = [o['ask']/price*100 for o in stk['options'][exp]['puts']] # option price vs stock price
+        y.extend([o['ask']/price*100 for o in stk['options'][exp]['calls']])
+        xpct = [int((s - price) / price * 100) for s in x] # strike price/stock price
+        if len(y) <= 1: continue
+        optratio = CalcOptionRatio(sym, xpct, y, 20) # call price vs put price 20% from stock price
+        printx(sym, 'ratio', rnd2(optratio))
+        if optratio < 1.75: continue # minimum call/put price ratio
+        optionstks.append(sym)
+        CreateChartImage(f'{sym} ({price}) - Option Spread \nExp {exp}   C/P {rnd2(optratio)}', xpct,y,
+                         'Pct Strike','Pct Price', True,
+                         sym+'_OptionSpread.png', (4,2.5))
 
-if stkcnt:
-    SendEmail(html,f'Stock Option Alert ({stkcnt})', images)
-
-# with open('StockOptionCheck.log', 'w') as f:
-#     f.write(logtxt)  # write full log to log file
+    images = []
+    print('Get Stock History\\Build Charts...')
+    html = '<html><body><center>'
+    stkcnt = 0
+    for stk in stock_list:
+        if not stk in optionstks: continue # must have option chart
+        printx(stk)
+        # price line chart
+        hist = GetStockHistory(stk)[-250:] # 1 year
+        CreateChartImage(stk + ' - ' + GetStockName(stk)['name'], list(range(len(hist))), [p[3] for p in hist],
+                         'Day','Close', False, stk + '.png', None)
+        images.append(stk + '.png') # for email
+        html += f'<br/><img src="cid:{stk}"><br/>\n'
+        # earnings scatter plot
+        if stk in earnings_all.keys():
+            yact = [e['actual'] for e in earnings_all[stk]]
+            yest = [e['estimate'] for e in earnings_all[stk]]
+            xe = list(range(len(yact))) # x axis
+            CreateEarningsChart(stk + ' - Earnings ', xe, yact, 'Act', xe, yest, 'Est', stk+'_Earnings.png')
+            images.append(stk + '_Earnings.png') # for email
+            html += f'<br/><img src="cid:{stk}_Earnings"><br/><br/>\n'
+        # add images to email
+        images.append(stk + '_OptionSpread.png')  # for email
+        html += f'<br/><img src="cid:{stk}_OptionSpread"><br/>\n'
+        html += f'<br/><a href="{baselink}{stk}:{GetStockName(stk)["exchange"]}" style="font-size:20px;">GoogleFinance {stk}</a><br/>\n'
+        stkcnt += 1
+    html += '</center></body></html>'
+    printx(html)
+    if stkcnt:
+        SendEmail(html,f'Stock Option Alert ({stkcnt})', images)
+except Exception as ex:
+    html = f'<html><body><b>{str(ex)}</b></body></html>'
+    SendEmail(html, f'Stock Option Alert - ERROR', [])
