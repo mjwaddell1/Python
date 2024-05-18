@@ -9,7 +9,7 @@ The predictor (Y) is the odd\even flag  (matches X[1])<br/>
 The question is: Will the neural network ignore the random value during training?<br/>
 
 Based on several runs, the random value is not ignored and full training is not achieved.<br/>
-Replacing the random value with a constant (0) produced correct training.<br/>
+Replacing the random value with a constant (0) produces correct training.<br/>
 The counter value is ignored.
 
 With random value:
