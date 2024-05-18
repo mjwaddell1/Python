@@ -1,13 +1,10 @@
-import os
-
-import requests, warnings, urllib3, datetime, time
+import requests, warnings, urllib3, datetime, time, os
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 from time import sleep
 import matplotlib.pyplot as plt
 import numpy as np
-import datetime
 from urllib3.exceptions import InsecureRequestWarning
 
 warnings.simplefilter(action='ignore', category=Warning) # suppress requests warning
@@ -19,16 +16,18 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # suppress S
 # Send email with stock price\earnings\options charts
 # ** Uneven options chart indicates bullish\bearish sentiment
 
-mbkey = 'o6eB0qL4XcBX4tHdyrGXXXXXXXXXXXXXXXX1HjNhkfpV5G8Kj96kg'  # https://mboum.com/api/welcome, free account
-sskey = '58f18d4b-XXXXXXXXXXX-04465a30199b'  # https://github.com/yongghongg/stock-symbol
+mbkey = 'o6eB0qL4XcBX4txxxxxxxxxxxxxxHjNhkfpV5G8Kj96kg'  # https://mboum.com/api/welcome, free account
+sskey = '58f18d4b-xxxxxxxxxxx-04465a30199b'  # https://github.com/yongghongg/stock-symbol
+
+logtxt = ''
 
 # this script is part of an hourly task
 if datetime.datetime.now().weekday() > 4:  # only run on weekdays
     print('Market closed.')
     quit()  # 0=mon, 5=sat, 6=sun
 
-if (datetime.datetime.now().hour <= 15):  # run at market close (after 3pm)
-    print('Before 3pm')
+if (datetime.datetime.now().hour <= 16):  # run at market close (after 4pm)
+    print('Before 4pm')
     quit()
 
 if (datetime.datetime.now().hour > 17):  # run at market close (before 5pm)
@@ -42,8 +41,11 @@ def printx(*args):
     with open('StockJumpCheck.log', 'w') as f:
         f.write(logtxt)  # write full log to log file
 
+def rnd2(val):  # round 2 decimal places
+    return str(int(val * 100) / 100.0)
+
 def GetStockNames(): # stock name\exchange, could probably just run this once, stock list rarely changes
-    print('Get Stock Names..')
+    print('Get Stock Names...')
     # get all stock names in US
     # https://stock-symbol.herokuapp.com/api/
     url = 'https://stock-symbol.herokuapp.com/api/'
@@ -68,6 +70,7 @@ def CreateChartImage(title, x, y, xlabel, ylabel, zeroline, filename, figsize=No
         ax.axvline(0, color='black') # highlight zero strike pct (at the money)
         ax.axvline(-20, color='seagreen')
         ax.axvline(20, color='seagreen')
+    plt.tight_layout()
     # plt.show()
     fig.savefig(filename) # save to png file
     plt.close()
@@ -79,7 +82,7 @@ def CreateEarningsChart(title, x1, y1, label1, x2, y2, label2, filename):
     plt.scatter(x, y, label=label1) # actual
     x = np.array(x2)
     y = np.array(y2)
-    plt.scatter(x, y, label=label2) # estimate
+    plt.scatter(x, y, label=label2, marker='*') # estimate
     plt.title(title)
     plt.legend()
     plt.axhline(0, color='grey')
@@ -88,18 +91,20 @@ def CreateEarningsChart(title, x1, y1, label1, x2, y2, label2, filename):
     fig.clf() # clear plot data
     plt.close()
 
-logtxt = ''
-
 def GetEarningHistory(stks): # last 4 quarters actual\estimate
-    print('Get Earnings...')
+    printx('Get Earnings...')
     url = stk = None
     try:
         data = {}
         for stk in stks:
             print('.', end='', flush=True)
-            # https://mboum.com/api/v1/qu/quote/earnings/?symbol=AAPL&apikey=o6eB0qL4XcBX4XXXXXXXXXXXXXXXnOpr1HjNhkfpV5G8Kj96kg
+            # https://mboum.com/api/v1/qu/quote/earnings/?symbol=AAPL&apikey=o6eB0qL4XcBX4txxxxxxxxxxxxxxxNhkfpV5G8Kj96kg
             url = 'https://mboum.com/api/v1/qu/quote/earnings/?symbol=' + stk + '&apikey=' + mbkey
             rsp = requests.get(url, verify=False).json()
+            if 'error' in rsp.keys():
+                printx(f'\nGetEarningHistory {stk} - Error:{rsp["error"]}')
+                printx(url)
+                continue
             earnings = rsp["data"]["earningsChart"]["quarterly"] # includes estimate and actual, last 4 qtrs
             tmp = {}
             for e in earnings:
@@ -108,9 +113,10 @@ def GetEarningHistory(stks): # last 4 quarters actual\estimate
             keys = sorted(tmp.keys()) # 4 qtrs, latest last
             data[stk] = [tmp[k] for k in keys]
             time.sleep(.1) # mboum has rate limit
+        printx(data)
         return data
     except Exception as ex:
-        print('\nGetEarningHistory', '\n', ex,'\n',url,'\n',stk)
+        printx('\nGetEarningHistory', '\n', ex, '\n', url, '\n', stk)
 
 def GetStockHistory(sym):  # get history from mboum, basic account
     # 1m | 5m | 15m | 30m | 1h | 1d | 1wk | 1mo | 3mo
@@ -203,7 +209,7 @@ def GetOptionsMB(stk, exp):
                  'ratio': ratio
             })
         print('.', end='', flush=True) # need flush to force print
-        printx(info, data)
+        printx(stk, exp, info, data)
         return info,data # price, options
 
 def GetImageData(filename): # for email
@@ -341,6 +347,25 @@ def GetFinVizStocksTbl(filters=None):  # FinViz, scrape main table
             return stks
         sleep(0.1)  # must pause between pages
 
+def CalcOptionRatio(stk, xpct, y, pct): # call/put price at pct point
+    try:
+        # strike won't fall exactly at pct, must interpolate
+        if pct > abs(xpct[0]) or pct > abs(xpct[-1]):
+            printx(stk, 'Option range too small')
+            return 0 # option range too small
+        putpct = callpct = 0
+        for idx in range(len(xpct)-1):
+            if xpct[idx] <= -pct <= xpct[idx+1]:
+                putpct = (-pct-xpct[idx])/(xpct[idx+1]-xpct[idx]) * (y[idx+1]-y[idx]) + y[idx]
+            if xpct[idx] <= pct <= xpct[idx+1]:
+                callpct = (pct-xpct[idx])/(xpct[idx+1]-xpct[idx]) * (y[idx+1]-y[idx]) + y[idx]
+            if putpct and callpct: break # found both
+        return callpct/(putpct+.00001)
+    except Exception as ex:
+        printx('ERROR: CalcOptionRatio', stk, ex)
+        return 0
+
+
 filters = [  # finviz, initial filter for stocks
     'ta_highlow52w_nh',  # 52 week high
     'ta_sma20_pa10',     # price 10% above SMA 20 day
@@ -348,7 +373,13 @@ filters = [  # finviz, initial filter for stocks
     'fa_epsyoy_pos'      # earnings rise yr/yr
 ]
 
-stks = GetStockNames() # US market, all stocks
+def GetStockName(stk):
+    if stk in stknames:
+        return stknames[stk]
+    return {'name': '-Unknown-', 'exchange': ''}
+
+# try:
+stknames = GetStockNames() # US market, all stocks
 stock_list = GetFinVizStocksTbl(','.join(filters)) # finviz filter
 if not len(stock_list):
     printx('No stocks from FinViz') # no recent jumps
@@ -359,12 +390,16 @@ stock_list = [s['Ticker'] for s in stock_list] # just tickers
 earnings_all = GetEarningHistory(stock_list) # from mbaum, last 4 quarters
 earnings = {}
 for e in earnings_all.keys():
-    if earnings_all[e][-1]['estimate'] <= earnings_all[e][-1]['actual']: # show only positive surprises
+    printx(e)
+    if len(earnings_all[e]) > 1 and \
+        earnings_all[e][-1]['estimate'] <= earnings_all[e][-1]['actual'] and \
+        earnings_all[e][-1]['actual'] >= earnings_all[e][-2]['actual']: # show only positive trend
         earnings[e] = earnings_all[e]
 stock_list = list(earnings.keys()) # filter list based on earnings
 
 expdates = GetExpireDates([6]) # 6 month
 
+printx('\nGet Options...')
 stkdict = {}
 for stk in stock_list:
     stkdict[stk] = {'stkprice': 0, 'stkchgpct': 0, 'options': {}}
@@ -392,11 +427,15 @@ for sym in stkdict.keys():
     y.extend([o['ask']/price*100 for o in stk['options'][exp]['calls']])
     xpct = [int((s - price) / price * 100) for s in x] # strike price/stock price
     if len(y) <= 1: continue
+    optratio = CalcOptionRatio(sym, xpct, y, 20) # call price vs put price 20% from stock price
+    printx(sym, 'ratio', rnd2(optratio))
     optionstks.append(sym)
-    CreateChartImage(f'{sym} ({price}) - Option Spread',xpct,y,
-                     'Pct Strike','Pct Price', True, sym+'_OptionSpread.png', (4,2))
+    CreateChartImage(f'{sym} ({price}) - Option Spread \nExp {exp}   C/P {rnd2(optratio)}', xpct, y,
+                     'Pct Strike','Pct Price', True,
+                     sym+'_OptionSpread.png', (4,2.5))
+    # CreateChartImage(f'{sym} ({price}) - Option Spread',xpct,y,
+    #                  'Pct Strike','Pct Price', True, sym+'_OptionSpread.png', (4,2))
 
-xe = [1,2,3,4] # earnings chart x axis
 images = []
 print('Get Stock History\\Build Charts...')
 html = '<html><body><center>'
@@ -404,12 +443,13 @@ for stk in stock_list:
     printx(stk)
     # price line chart
     hist = GetStockHistory(stk)[-250:] # 1 year
-    CreateChartImage(stk + ' - ' + stks[stk]['name'], list(range(len(hist))), [p[3] for p in hist],
+    CreateChartImage(stk + ' - ' + GetStockName(stk)['name'], list(range(len(hist))), [p[3] for p in hist],
                      'Day','Close', False, stk + '.png')
     images.append(stk + '.png') # for email
     # earnings scatter plot
     yact = [e['actual'] for e in earnings[stk]]
     yest = [e['estimate'] for e in earnings[stk]]
+    xe = list(range(len(yact))) # x axis
     CreateEarningsChart(stk + ' - Earnings ', xe, yact, 'Act', xe, yest, 'Est', stk+'_Earnings.png')
     images.append(stk + '_Earnings.png') # for email
     # add images to email
@@ -418,8 +458,10 @@ for stk in stock_list:
         images.append(stk + '_OptionSpread.png')  # for email
         html += f'<br/><img src="cid:{stk}_OptionSpread"><br/>\n'
     html += f'<br/><img src="cid:{stk}_Earnings"><br/>\n'
-    html += f'<br/><a href="{baselink}{stk}:{stks[stk]["exchange"]}" style="font-size:20px;">GoogleFinance {stk}</a><br/>\n'
+    html += f'<br/><a href="{baselink}{stk}:{GetStockName(stk)["exchange"]}" style="font-size:20px;">GoogleFinance {stk}</a><br/>\n'
 html += '</center></body></html>'
 printx(html)
-
 SendEmail(html,f'Stock Jump Alert ({len(stock_list)})', images)
+# except Exception as ex:
+#     html = f'<html><body><b>{str(ex)}</b></body></html>'
+#     SendEmail(html, f'Stock Jump Alert - ERROR', [])
