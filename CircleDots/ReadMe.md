@@ -1,4 +1,4 @@
-This is a simple experiment in swarm intelligence
+This is a simple experiment in swarm intelligence.<br/>
 A field of random dots will create a circle given only 2 instructions:
    - Move to\from the center point to match the radius value
    - Center between neighbors
