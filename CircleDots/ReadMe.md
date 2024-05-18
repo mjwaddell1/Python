@@ -1,9 +1,9 @@
 This is a simple experiment in swarm intelligence.<br/>
+
 A field of random dots will create a circle with each dot given only 2 instructions:
    - Move to\from the center point to match the radius value
    - Center between neighbors
 
-<br/>Note that dot angles are in radians (0-2PI), not degrees (0-360)
 
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/2a0599c6-ce0b-4f7e-8055-9c431bcecbe4)
 
