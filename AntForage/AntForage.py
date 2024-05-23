@@ -18,6 +18,7 @@ from random import randint
 #    Food runs out, create new food source
 #    Multiple food sources
 #    Predator attacks nest
+#    Staggered dispersal
 
 class Point: # for nest and food
     def __init__(self, x, y):
