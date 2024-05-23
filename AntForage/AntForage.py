@@ -19,6 +19,7 @@ from random import randint
 #    Multiple food sources
 #    Predator attacks nest
 #    Staggered dispersal
+#    Obstacle between nest and food
 
 class Point: # for nest and food
     def __init__(self, x, y):
