@@ -1,9 +1,9 @@
 This is a simple machine learning experiment.<br/>
 
 100 samples (X) are generated. Each sample has 3 values:
+- A random number
 - The counter (0-99)
 - Odd\even flag  (counter%2)
-- A random number
 
 The predictor (Y) is the odd\even flag  (matches X[1])<br/>
 
