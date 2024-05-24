@@ -6,6 +6,9 @@ This is a simple machine learning experiment.<br/>
 - A random number
 
 The predictor (Y) is the odd\even flag  (matches X[1])<br/>
+
+![image](https://github.com/mjwaddell1/Python/assets/35202179/6c27b9dd-9bb0-4522-9442-6ee8baf0d853)
+
 The question is: Will the neural network ignore the random value during training?<br/>
 
 Based on several runs, the random value is not ignored and full training is not achieved.<br/>
