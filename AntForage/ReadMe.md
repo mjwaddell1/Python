@@ -7,6 +7,7 @@ Notes:<br/>
    - Ants don't look for new food during return trip
    - Latest found food path is used by rest of colony, previous paths are deactivated
    - Food path may not be the most direct route, just latest path found
+   - Food depletes with each ant visit then is reset to new location
    - Multiple ants may be at same position, so single dot shown (ant overlap)
 
 Initial search:
