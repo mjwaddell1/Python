@@ -10,10 +10,10 @@ Notes:<br/>
    - Multiple ants may be at same position, so single dot shown (ant overlap)
 
 Initial search:
-![image](https://github.com/mjwaddell1/Python/assets/35202179/a594b150-1cd7-417e-8478-fbfbf892a33a)
+![image](https://github.com/mjwaddell1/Python/assets/35202179/36740927-015c-4d97-92fd-2ca3199b7002)
 
 Food found (by 2 ants), returning to nest:
-![image](https://github.com/mjwaddell1/Python/assets/35202179/01296801-5640-4eb2-a558-941e0d25f1f5)
+![image](https://github.com/mjwaddell1/Python/assets/35202179/83d0850c-1c9a-4fd4-b63d-1d93d6a60ca2)
 
-All ants feeding (pink dot is 48 ants moving together):
-![image](https://github.com/mjwaddell1/Python/assets/35202179/48ca9e62-e98e-4981-8b5e-f84ac70bae57)
+All ants feeding (big dot is 48 ants moving together):
+![image](https://github.com/mjwaddell1/Python/assets/35202179/403482d5-bb14-4031-a5e0-3a0a6cbe0dfe)
