@@ -71,7 +71,7 @@ def MoveFood(): # to random position
         y = randint(100, 600) # screen 0-699
         if DistanceXY(nest, x, y) < 50: # too close to nest
             continue
-        if InBox(x, y): # overlapping obstacle
+        if InBox(x, y): # overlaps obstacle
             continue
         food.x, food.y = (x, y)
         break
@@ -150,15 +150,18 @@ class Ant:
                 self.found_food = True
                 self.direction = -1 # return to nest
                 return
+            move_random = True
             if food_dist < food_smell_dist:  # detect food, go toward food
                 deg = Degrees(food, self)
                 dist = min(food_dist, ant_speed)
                 x = dist * math.cos(deg) + self.x
                 y = dist * math.sin(deg) + self.y
-                self.x, self.y = x, y
-                self.trail.append((self.x, self.y)) # extend trail
-                self.trail_pos += 1
-            else: # just moving away from nest, searching for food
+                if not InBox(x, y): # no obstacle, move directly toward food
+                    self.x, self.y = x, y
+                    self.trail.append((self.x, self.y)) # extend trail
+                    self.trail_pos += 1
+                    return # done move
+            if move_random: # just moving away from nest, searching for food
                 # random direction out
                 for ctr in range(100): # move away from nest
                     deg = randint(0, 1000) * 2*math.pi/1000.0
