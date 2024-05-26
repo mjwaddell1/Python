@@ -12,14 +12,13 @@ from random import randint
 #    Latest found food path is used by rest of colony, previous paths deactivated
 #    Food path may not be the most direct route, just latest path found
 #    Multiple ants may be at same position, so single dot shown
+#    If ant hits obstacle on return path, ant is reset to nest
 #    In reality, ants can can smell food 100 miles away if not obstacles
 
 # Possible add-ons:
 #    Food runs out, create new food source
 #    Multiple food sources
 #    Predator attacks nest
-#    Staggered dispersal
-#    Obstacle between nest and food
 
 class Point: # for nest and food
     def __init__(self, x, y):
@@ -39,11 +38,16 @@ ant_speed = 3 # max pixel movement per step
 ant_cnt = 50 # dot count
 food_smell_dist = 30 # ant can detect food
 tracer_ants = []  #[0,1,2] # highlight ants for tracking
+box = Point(300, 300)
+boxside = 50
 
 scr_width = 1000
 scr_height = 700
 window = pygame.display.set_mode((scr_width, scr_height))
 pygame.display.set_caption("Ants")
+
+def InBox(x, y):
+    return box.x-1 <= x <= box.x+boxside+1 and box.y-1 <= y <= box.y+boxside+1
 
 def DistancePt(pt1, pt2):
     return (sqrt((pt1.x - pt2.x) ** 2 + (pt1.y - pt2.y) ** 2))
@@ -94,16 +98,18 @@ class Ant:
             else: # no food trail, move out in random direction
                 self.direction = 1 # move out
                 dist = ant_speed # max ant speed
-                deg = randint(0, 1000) * 2 * math.pi / 1000.0
-                x = dist * math.cos(deg) + self.x
-                y = dist * math.sin(deg) + self.y
+                while True:
+                    deg = randint(0, 1000) * 2 * math.pi / 1000.0
+                    x = dist * math.cos(deg) + self.x
+                    y = dist * math.sin(deg) + self.y
+                    if not InBox(x, y): break
                 self.nest_dist = 0 # ant distance from nest
                 self.x, self.y = x, y
                 self.trail.append((self.x, self.y))
             return
         if self.direction == 1 and self.food_trail_index > -1: # on food trail, moving toward food
             self.trail_pos += 1
-            if self.trail_pos >= len(self.trail): # at food
+            if  self.trail_pos >= len(self.trail): # at food
                 if DistancePt(self, food) > 1: # food not there
                     self.cancel_food = True
                     self.direction = -1 # return to nest
@@ -112,7 +118,12 @@ class Ant:
                     self.direction = -1 # return to nest
                     self.trail_pos -= 1
             else: # next step toward food
-                self.x, self.y = self.trail[self.trail_pos]
+                if InBox(*self.trail[self.trail_pos]): # hit obstacle
+                    self.cancel_food = True
+                    self.direction = -1 # return to nest
+                    self.trail_pos -= 1
+                else:
+                    self.x, self.y = self.trail[self.trail_pos]
             return
         if self.direction == 1: # moving out randomly
             # near food?
@@ -131,13 +142,21 @@ class Ant:
                 self.trail_pos += 1
             else: # just moving away from nest, searching for food
                 # random direction out
-                while True: # move away from nest
+                for ctr in range(100): # move away from nest
                     deg = randint(0, 1000) * 2*math.pi/1000.0
                     x = dist * math.cos(deg) + self.x
                     y = dist * math.sin(deg) + self.y
                     dist_nst = DistanceXY(nest, x, y)
-                    if dist_nst >= self.nest_dist - .5: # further from nest
+                    if not InBox(x, y) and dist_nst >= self.nest_dist - .5: # further from nest
                         break
+                else:
+                    self.food_trail_index = -1
+                    self.found_food = False
+                    self.trail = [(nest.x, nest.y)]  # reset ant trail
+                    self.trail_pos = 0
+                    self.direction = 0
+                    self.x, self.y = self.trail[self.trail_pos]
+                    return
                 self.nest_dist = dist_nst
                 self.x, self.y = x, y
                 self.trail.append((self.x, self.y))
@@ -163,13 +182,19 @@ class Ant:
                 self.trail = [(nest.x, nest.y)] # reset ant trail
                 self.trail_pos = 0
                 return
+            if InBox(*self.trail[self.trail_pos]):  # hit obstacle
+                self.food_trail_index = -1
+                self.found_food = False
+                self.trail = [(nest.x, nest.y)]  # reset ant trail
+                self.trail_pos = 0
+                self.direction = 0
             self.x, self.y = self.trail[self.trail_pos]
             return
 
 pygame.font.init() # only needed once
 def WriteText(): # instructions
     my_font = pygame.font.SysFont('Arial', 12)
-    text_surface = my_font.render('Pause:<Space>  Quit:<Esc>  Move Food:<LeftClick>', False, (200, 200, 200))
+    text_surface = my_font.render('Pause:<Space>  Quit:<Esc>  Move Food:<LeftClick>  Move Box:<RightClick>', False, (200, 200, 200))
     window.blit(text_surface, (10, scr_height - 20))
 
 def CheckEvents(): # check if user clicked key/mouse
@@ -183,8 +208,24 @@ def CheckEvents(): # check if user clicked key/mouse
                 paused = not paused
             if event.key == pygame.K_ESCAPE:
                 quit()
-        if event.type == pygame.MOUSEBUTTONDOWN: # move food
-            food.x, food.y = event.dict['pos']
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.dict['button'] == 1: # move food
+                food.x, food.y = event.dict['pos']
+            if event.dict['button'] == 3: # move box
+                old = (box.x, box.y) # may need to revert move
+                box.x, box.y = (event.dict['pos'][0]-boxside/2, event.dict['pos'][1]-boxside/2)
+                if InBox(nest.x, nest.y): # box on nest
+                    box.x, box.y = old # revert move
+                    continue
+                for ant in ants: # reset ants in box
+                    if InBox(ant.x, ant.y): # reset ant to nest
+                        ant.food_trail_index = -1
+                        ant.found_food = False
+                        ant.trail = [(nest.x, nest.y)]  # reset ant trail
+                        ant.trail_pos = 0
+                        ant.direction = 0
+                        ant.x, ant.y = ant.trail[ant.trail_pos]
+
 
 # initialize random dots
 ants = []
@@ -213,5 +254,6 @@ while True: # run until escape pressed
 
     pygame.draw.circle(window, (255,255,255), (nest.x, nest.y), 5) # circle center
     pygame.draw.circle(window, (55,255,55), (food.x, food.y), 5) # circle center
+    pygame.draw.rect(window, (150, 50, 50), (box.x, box.y, boxside, boxside)) # box
     pygame.display.update() # show updates
     time.sleep(.1) # slow movement
