@@ -202,6 +202,7 @@ class Ant:
                 self.found_food = False
                 self.trail = [(nest.x, nest.y)] # reset ant trail
                 self.trail_pos = 0
+                self.x, self.y = self.trail[self.trail_pos]
                 return
             if InBox(*self.trail[self.trail_pos]):  # hit obstacle
                 self.food_trail_index = -1
