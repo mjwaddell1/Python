@@ -1,9 +1,9 @@
 This script simulates a sheep flock<br/>
 Dogs gather the sheep and push them to the shepherd<br/><br/>
 Notes:
-- Each dog has slice of circle
+- Each dog has an equal slice of the circle
 - Dog slices overlap to prevent sheep from jumping between dogs
-- Dog speed must be higher than sheep so dog can pass sheep
+- Dog speed must be higher than sheep so dog can outrun sheep
 - Sheep can overlap positions but attempt to spread out
 
 Start
