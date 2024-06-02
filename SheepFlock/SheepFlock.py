@@ -162,7 +162,7 @@ while True: # run until escape pressed
                             found = False
                     if found:
                         break # exit retry loop
-            else:
+            else: # random movement
                 deg = randint(0, 1000) * 2 * math.pi / 1000.0
                 dist = sheep_speed/2 + sheep_speed/2 * random() # random speed
                 x = dist * math.cos(deg) + shp.x
