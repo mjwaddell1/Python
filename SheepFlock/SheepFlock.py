@@ -162,7 +162,7 @@ while True: # run until escape pressed
                             found = False
                     if found:
                         break # exit retry loop
-            else: # random movement
+            else:
                 deg = randint(0, 1000) * 2 * math.pi / 1000.0
                 dist = sheep_speed/2 + sheep_speed/2 * random() # random speed
                 x = dist * math.cos(deg) + shp.x
@@ -204,19 +204,19 @@ while True: # run until escape pressed
                 y = dist * math.sin(dg.mid_angle) + shepherd.y
                 dg.MoveTowardXY(x, y)
 
-    window.fill((0, 0, 0)) # clear screen
+    window.fill((0, 100, 0)) # clear screen
     WriteText()
-    for i in range(sheep_cnt):
+    for i in range(sheep_cnt): # draw sheep
         if i in tracerdots:
             Draw(sheep[i], (0, 0, 255)) # blue, highlight dots for tracking
         else:
-            Draw(sheep[i], (155, 155, 155)) # white
-    for i in range(dog_cnt):
+            Draw(sheep[i], (200, 200, 200)) # white
+    for i in range(dog_cnt): # draw dogs
         if i in tracerdots:
             Draw(dogs[i], (0, 0, 255), 3) # blue, highlight dots for tracking
         else:
-            Draw(dogs[i], (200, 100, 0), 3) # orange
+            Draw(dogs[i], (100, 50, 0), 3) # orange
 
-    pygame.draw.circle(window, (0, 155, 0), (shepherd.x, shepherd.y), 5) # circle center
+    pygame.draw.circle(window, (50, 50, 50), (shepherd.x, shepherd.y), 5) # circle center
     pygame.display.update() # show updates
     # time.sleep(.1) # slow movement
