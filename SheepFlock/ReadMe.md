@@ -7,14 +7,14 @@ Notes:
 - Sheep can overlap positions but attempt to spread out
 
 Start
-![image](https://github.com/mjwaddell1/Python/assets/35202179/45cda7a3-3f07-49d7-a26d-71b740e3d82c)
+![image](https://github.com/mjwaddell1/Python/assets/35202179/73b81829-b05d-42e1-8a28-d96b4377379c)
 
 In Progress
-![image](https://github.com/mjwaddell1/Python/assets/35202179/c0ad83f0-3e75-4950-9b12-3e8303d3e0ed)
+![image](https://github.com/mjwaddell1/Python/assets/35202179/f4ab8b60-6e44-486a-963e-b64de59e9619)
 
 Complete
-![image](https://github.com/mjwaddell1/Python/assets/35202179/b08a2742-ee66-4427-8285-90a901f9f8ac)
+![image](https://github.com/mjwaddell1/Python/assets/35202179/4a910593-6359-432b-a42e-692a2b016ab0)
 
 Move Shepherd
-![image](https://github.com/mjwaddell1/Python/assets/35202179/2a1138a2-442e-493c-9abd-c51abcb037ce)
+![image](https://github.com/mjwaddell1/Python/assets/35202179/4aad8808-4a0f-4510-a2a2-98fdaabb85b2)
 
