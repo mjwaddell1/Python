@@ -74,13 +74,13 @@ def train(data_set, model, criterion, train_loader, optimizer, epochs=5, plot_nu
     plt.show()
     return cost
 
-data_set=Data() # new dataset
+data_set = Data() # new dataset
 
-model=Net(3,9,1) # 3 input neurons, 9 neurons in hidden layer
-learning_rate=0.1
-criterion=nn.BCELoss() # binary cross entropy
-optimizer=torch.optim.Adam(model.parameters(), lr=learning_rate)
-train_loader=DataLoader(dataset=data_set, batch_size=100)
-cost=train(data_set,model,criterion, train_loader, optimizer, epochs=100, plot_number=50)
+model = Net(3,9,1) # 3 input neurons, 9 neurons in hidden layer
+learning_rate = 0.1
+criterion = nn.BCELoss() # binary cross entropy
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+train_loader = DataLoader(dataset=data_set, batch_size=100)
+cost = train(data_set,model,criterion, train_loader, optimizer, epochs=100, plot_number=50)
 
 plt.plot(cost)
