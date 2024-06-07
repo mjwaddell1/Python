@@ -28,6 +28,10 @@ def GetStockNames():
 
 mbkey = 'yOA0bpDZMjKngTV------------------LLRayeWK4UGGfVjKJn'  # https://mboum.com/api/welcome, free account
 
+### THIS NO LONGER WORKS (403 forbidden)
+### TODO - Use https://financialmodelingprep.com/api/v3/economic_calendar?from=2024-06-06&to=2024-06-12&apikey=xxxxx
+### see StockJumpCheck.py
+
 def GetEconCalendar(endDate):  # from today 12am, to end date 11pm
     fromDate = str(date.today())  # 2023-12-15
     if type(endDate) == datetime.date:
