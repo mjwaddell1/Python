@@ -5,7 +5,7 @@ This is a simple machine learning experiment.<br/>
 - The counter value (0-99)
 - Odd\even flag  (counter%2)
 
-The predictor (Y) is the odd\even flag  (matches X[1])<br/>
+The predictor (Y) is the odd\even flag  (matches X IsOdd)<br/>
 
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/3ec7d602-0cba-4893-babe-494ac451277f)
 
