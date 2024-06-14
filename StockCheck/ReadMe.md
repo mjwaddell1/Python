@@ -14,6 +14,8 @@ The option spread chart shows option prices for the 6 month options (call/puts).
 
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/63ba1e76-0e10-4ebd-b106-f7de19078c6a)
 
+<b>Zacks Rank: <font color="green">1 Strong Buy</font></b>
+
 <br><br><b>Economic Events</b>
 <table>
 <tr><td>2024-06-07</td><td>&nbsp;&nbsp;&nbsp;Fri</td><td>&nbsp;&nbsp;&nbsp;ECB President Lagarde Speech</td></tr>
