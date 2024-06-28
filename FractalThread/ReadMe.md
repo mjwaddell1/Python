@@ -24,5 +24,5 @@ Rendered selection:
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/1090a94f-df53-441a-8807-3d008a07a129)
 
 Various captures:
-![image](https://github.com/mjwaddell1/Python/assets/35202179/161bc11d-0d37-4f27-8cf5-a940a0eebe5d)
+![image](https://github.com/mjwaddell1/Python/assets/35202179/0c58ab8d-0072-4f40-a43a-30ec664af403)
 
