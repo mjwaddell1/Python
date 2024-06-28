@@ -1,19 +1,25 @@
-import pygame, time, threading
+import copy, pygame, time, threading
 import numpy as np
 
 pygame.init() # required for screen info
 # open full screen
 infoObject = pygame.display.Info()
-scr_width = infoObject.current_w  #1500
-scr_height = infoObject.current_h  #900
+scr_width = infoObject.current_w   #1920
+scr_height = infoObject.current_h  #1080
 window = pygame.display.set_mode((scr_width, scr_height))
 pygame.display.set_caption("Fractal")
+
+class Frame: # for render history
+    def __init__(self, fractal_rect, surface, selection_rect):
+        self.fractal_rect = fractal_rect
+        self.surface = surface
+        self.selection_rect = selection_rect
 
 drag = False # drawing selection rectangle
 drawing = False # drawing fractal in progress
 
 def CheckEvents():
-    global drag, sel_rect, fract_rect
+    global drag, frames, cur_frame, sel_rect
     events = pygame.event.get()
     for event in events:
         if event.type == pygame.QUIT: # from title bar
@@ -24,31 +30,41 @@ def CheckEvents():
         if not drawing: # drawing fractal
             if event.type == pygame.MOUSEBUTTONDOWN: # start selection
                 drag = True
+                sel_rect = [0, 0, 0, 0]
                 sel_rect[0], sel_rect[1] = event.pos
-                sel_rect[2], sel_rect[3] = 0, 0
+                frames[cur_frame].selection_rect = sel_rect
             if event.type == pygame.MOUSEBUTTONUP:
                 drag = False # done selection
             if event.type == pygame.MOUSEMOTION:
                 if drag: # mouse button pressed
                     sel_rect[2], sel_rect[3] = event.pos # adjust selection rectangle
+                    frames[cur_frame].selection_rect = sel_rect
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE: # reset image
-                    fract_rect = fract_rect_start[:] # copy
-                    sel_rect = [0, 0, 0, 0] # reset selection
-                    DrawFractal()
+                    cur_frame = 0
+                    frames[0].selection_rect = [0, 0, 0, 0] # reset selection
+                    frames = frames[:1] # trim to 1st frame
                 if event.key == pygame.K_RETURN: # process selection rectangle
+                    fract_rect = frames[cur_frame].fractal_rect[:] # don't overwrite history
                     temp = (fract_rect[0], fract_rect[1], fract_rect[2], fract_rect[3])
                     # new fractal boundaries based on selection rectangle
                     fract_rect[0] = temp[0] + (temp[2] - temp[0]) / scr_width * sel_rect[0]
                     fract_rect[2] = temp[0] + (temp[2] - temp[0]) / scr_width * sel_rect[2]
                     fract_rect[1] = temp[1] + (temp[3] - temp[1]) / scr_height * sel_rect[1]
                     fract_rect[3] = temp[1] + (temp[3] - temp[1]) / scr_height * sel_rect[3]
+                    sfcx = DrawFractal(fract_rect)
+                    frames = frames[:cur_frame+1] # remove later frames
+                    cur_frame += 1
                     sel_rect = [0, 0, 0, 0] # clear selection rectangle
-                    DrawFractal()
+                    frames.append(Frame(fract_rect, sfcx, sel_rect))
+                if event.key == pygame.K_LEFT and cur_frame > 0: # left arrow
+                    cur_frame -= 1
+                if event.key == pygame.K_RIGHT and cur_frame < len(frames)-1: # right arrow
+                    cur_frame += 1
 
 # https://medium.com/nerd-for-tech/programming-fractals-in-python-d42db4e2ed33
 def mandelbrot(c, z):
-   iterations = 100
+   iterations = 200 # higher value has more detail, longer render time
    count = 0
    for a in range(iterations):
       z = z**2 + c
@@ -57,48 +73,45 @@ def mandelbrot(c, z):
          break
    return count
 
-# def mandelbrot_thread(x,y,i):
-#     for j in range(len(y)):
-#         c = complex(x[i], y[j])
-#         z = complex(0, 0)
-#         count = mandelbrot(c, z)
-#         window.set_at((i,j), (0, (count*7)%200, 0)) # shades of green
-#         pygame.display.update()  # each column
-#
-# threads = []
-# def mandelbrot_set(x, y): # use multithreading
-#    ctr_start = time.perf_counter()
-#    for i in range(len(x)):
-#       t1 = threading.Thread(target=mandelbrot_thread, args=(x,y,i)) # each column
-#       threads.append(t1)
-#       t1.start()
-#    for th in threads:
-#        th.join() # wait for all threads to finish
-#    ctr_stop = time.perf_counter()
-#    print('Draw Time:', ctr_stop - ctr_start) # 20 seconds
-#    CheckEvents()  # check quit event
+def mandelbrot_thread(x,y,i): # generate single column
+    for j in range(len(y)):
+        c = complex(x[i], y[j])
+        z = complex(0, 0)
+        count = mandelbrot(c, z)
+        window.set_at((i,j), (0, (count*7)%200, 0)) # shades of green
+    pygame.display.update()  # each column
 
-def mandelbrot_set(x, y):
+threads = []
+def mandelbrot_set(x, y): # use multithreading
+   print('Multi Thread')
    ctr_start = time.perf_counter()
    for i in range(len(x)):
-      for j in range(len(y)):
-         c = complex(x[i], y[j])
-         z = complex(0, 0)
-         count = mandelbrot(c, z)
-         window.set_at((i,j), (0, (count*7)%200, 0)) # shades of green
-         CheckEvents() # check quit event
-      pygame.display.update() # each column
+      t1 = threading.Thread(target=mandelbrot_thread, args=(x,y,i)) # each column
+      threads.append(t1)
+      t1.start()
+   for th in threads:
+       th.join() # wait for all threads to finish
    ctr_stop = time.perf_counter()
-   print('Draw Time:', ctr_stop - ctr_start) # 10 seconds
+   print('Draw Time:', ctr_stop - ctr_start) # 14 seconds
+   CheckEvents()  # check quit event
 
-fract_rect_start = [-2.6, -1.5, 1.5, 1.5] # intial fractal boundaries
-fract_rect = fract_rect_start[:] # for image reset
+# def mandelbrot_set(x, y): # single thread
+#    print('Single Thread')
+#    ctr_start = time.perf_counter()
+#    for i in range(len(x)):
+#       for j in range(len(y)):
+#          c = complex(x[i], y[j])
+#          z = complex(0, 0)
+#          count = mandelbrot(c, z)
+#          window.set_at((i,j), (0, (count*7)%200, 0)) # shades of green
+#          CheckEvents() # check quit event
+#       pygame.display.update() # each column
+#    ctr_stop = time.perf_counter()
+#    print('Draw Time:', ctr_stop - ctr_start) # 15 seconds
 
-sfc_fractal = None # store fractal image
-def DrawFractal():
+def DrawFractal(fract_rect):
     global drawing
-    drawing = True
-    global sfc_fractal
+    drawing = True # render in progress
     # creating our x and y arrays
     x = np.linspace(fract_rect[0], fract_rect[2], scr_width)
     y = np.linspace(fract_rect[1], fract_rect[3], scr_height)
@@ -106,16 +119,20 @@ def DrawFractal():
     mandelbrot_set(x, y) # generate fractal image
     sfc_fractal = window.copy() # store fractal image for quick redraw
     drawing = False
+    return sfc_fractal
 
-DrawFractal() # initial screen
+fract_rect_start = [-2.6, -1.5, 1.5, 1.5] # intial fractal boundaries
+sel_rect = [0, 0, 0, 0] # no selection rectangle
+sfc = DrawFractal(fract_rect_start) # initial screen
+frames = [Frame(fract_rect_start, sfc, sel_rect)] # image history for quick rendering undo\redo
+cur_frame = 0 # initial image
 
-sel_rect = [0, 0, 0, 0] # selection rectangle
-
-if __name__ =="__main__":
+if __name__ =="__main__": # needed for threading
     while True: # run until escape pressed
         CheckEvents() # mouse/escape/space
         window.fill((0, 0, 0))  # clear screen
-        window.blit(sfc_fractal, (0, 0)) # redraw fractal image first
+        window.blit(frames[cur_frame].surface, (0, 0)) # redraw fractal image first
+        sel_rect = frames[cur_frame].selection_rect
         r2 = (sel_rect[0], sel_rect[1], sel_rect[2]-sel_rect[0], sel_rect[3]-sel_rect[1]) # x,y,x_width,y_width
         pygame.draw.rect(window, (200, 200, 200), r2, 2) # selection rectangle
         pygame.display.update()  # update screen
