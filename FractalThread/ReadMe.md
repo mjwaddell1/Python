@@ -6,7 +6,7 @@ The application allows the user to select a portion of the fractal then zoom in 
 
 Process Explorer indicates additional threads being used so it's unclear why the threading library does not improve render speed.
 
-This the Python version used: Python 3.11.5 | packaged by Anaconda, Inc. | (main, Sep 11 2023, 13:26:23) [MSC v.1916 64 bit (AMD64)] on win32
+Python version used: Python 3.11.5 | packaged by Anaconda, Inc. | (main, Sep 11 2023, 13:26:23) [MSC v.1916 64 bit (AMD64)] on win32
 
 Process Explorer - Single thread:
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/53724d57-d491-4a7b-8ffe-ddcd407d4127)
