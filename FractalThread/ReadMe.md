@@ -1,6 +1,6 @@
 This code generates the Mandlebrot set. It uses a single thread or the threading module. This is a good candidate for multi-threading since each point value is calculated separately.
 
-The execution time using the threading library is about the same as using a single thread. This is probably due to the GIL and true multithreading is not currently supported.
+The execution time using the threading library is about the same as using a single thread. This is probably due to the GIL and true multithreading is not currently supported in Python.
 
 The application allows the user to select a portion of the fractal then zoom in (enter key). The space bar resets the image. The left\right arrows are used to traverse through the render history. Escape exits the script.
 
