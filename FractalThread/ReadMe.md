@@ -14,6 +14,9 @@ Process Explorer - Single thread:
 Process Explorer - Multiple threads:
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/c1f5760f-68dd-4974-9208-78c7a66fa424)
 
+For reference - My PC has 6 cores and the CPU usage remains low during the render process:
+![image](https://github.com/mjwaddell1/Python/assets/35202179/7d565db5-4a98-4b67-bb7c-291fa82c98e3)
+
 Initial image with selection rectangle:
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/6b2631ef-10f6-4bcc-baa6-3e2c8853d8fd)
 
