@@ -23,7 +23,7 @@ Initial image with selection rectangle:
 Rendering selection in progress (multithreading):
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/abdf4190-df33-4ed9-97c6-d825987fbcb0)
 
-Rendered selection:
+Render complete:
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/1090a94f-df53-441a-8807-3d008a07a129)
 
 Various captures:
