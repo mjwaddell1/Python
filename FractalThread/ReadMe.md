@@ -17,7 +17,7 @@ Process Explorer - Multiple threads:
 Initial image with selection rectangle:
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/6b2631ef-10f6-4bcc-baa6-3e2c8853d8fd)
 
-Rendering selection using multithreading:
+Rendering selection in progress (multithreading):
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/abdf4190-df33-4ed9-97c6-d825987fbcb0)
 
 Rendered selection:
