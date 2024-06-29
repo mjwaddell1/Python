@@ -9,7 +9,7 @@ scr_height = infoObject.current_h  #1080
 window = pygame.display.set_mode((scr_width, scr_height))
 pygame.display.set_caption("Fractal")
 
-class Frame: # for render history
+class Frame: # for render history - could also use a dictionary, but a class provides clearer (dot) syntax
     def __init__(self, fractal_rect, surface, selection_rect):
         self.fractal_rect = fractal_rect
         self.surface = surface
