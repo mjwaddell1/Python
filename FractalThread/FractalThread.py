@@ -89,7 +89,7 @@ def mandelbrot_set(x, y): # use multithreading
       t1 = threading.Thread(target=mandelbrot_thread, args=(x,y,i)) # each column
       threads.append(t1)
       CheckEvents()  # check quit event
-      t1.start()
+      t1.start() # threads are queued here, blocking until last thread started
    for th in threads:
        th.join() # wait for all threads to finish
    ctr_stop = time.perf_counter()
