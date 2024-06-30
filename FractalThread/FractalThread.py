@@ -1,15 +1,15 @@
-import copy, pygame, time, threading
+import copy, math, pygame, time, threading, colorsys
 import numpy as np
 
 pygame.init() # required for screen info
 # open full screen
 infoObject = pygame.display.Info()
-scr_width = infoObject.current_w   #1920
-scr_height = infoObject.current_h  #1080
+scr_width = infoObject.current_w  #1500
+scr_height = infoObject.current_h  #900
 window = pygame.display.set_mode((scr_width, scr_height))
 pygame.display.set_caption("Fractal")
 
-class Frame: # for render history - could also use a dictionary, but a class provides clearer (dot) syntax
+class Frame: # for render history
     def __init__(self, fractal_rect, surface, selection_rect):
         self.fractal_rect = fractal_rect
         self.surface = surface
@@ -62,9 +62,22 @@ def CheckEvents():
                 if event.key == pygame.K_RIGHT and cur_frame < len(frames)-1: # right arrow
                     cur_frame += 1
 
+
+iterations = 360 # even number, higher value has more detail, longer render time
+
+def Generate_Colors(): # color wheel
+    colors = []
+    for hue in range(iterations):
+        clr = colorsys.hsv_to_rgb(hue/float(iterations), 0.6, 1.0)
+        colors.append((int(clr[0]*255), int(clr[1]*255), int(clr[2]*255)))
+    mid = int(iterations/2.0)
+    colors = colors[mid:] + colors[:mid]
+    return colors
+
+colors = Generate_Colors()
+
 # https://medium.com/nerd-for-tech/programming-fractals-in-python-d42db4e2ed33
 def mandelbrot(c, z):
-   iterations = 200 # higher value has more detail, longer render time
    count = 0
    for a in range(iterations):
       z = z**2 + c
@@ -78,23 +91,26 @@ def mandelbrot_thread(x,y,i): # generate single column
         c = complex(x[i], y[j])
         z = complex(0, 0)
         count = mandelbrot(c, z)
-        window.set_at((i,j), (0, (count*7)%200, 0)) # shades of green
+        window.set_at((i,j), (0, (count*5) % 200, 0)) # shades of green, more contrast
+        # window.set_at((i,j), (0, count/iterations*250, 0)) # shades of green, single scale
+        # window.set_at((i, j), colors[count-1])  # color wheel
     pygame.display.update()  # each column
 
 threads = []
 def mandelbrot_set(x, y): # use multithreading
-   print('Multi Thread')
-   ctr_start = time.perf_counter()
-   for i in range(len(x)):
-      t1 = threading.Thread(target=mandelbrot_thread, args=(x,y,i)) # each column
-      threads.append(t1)
-      CheckEvents()  # check quit event
-      t1.start() # threads are queued here, blocking until last thread started
-   for th in threads:
-       th.join() # wait for all threads to finish
-   ctr_stop = time.perf_counter()
-   print('Draw Time:', ctr_stop - ctr_start) # 14 seconds
-   CheckEvents()  # check quit event
+    print('Multi Thread')
+    ctr_start = time.perf_counter()
+    for i in range(len(x)):
+        t1 = threading.Thread(target=mandelbrot_thread, args=(x,y,i)) # each column
+        threads.append(t1)
+        CheckEvents()  # check quit event
+        t1.start() # threads are queued here
+    for th in threads:
+        th.join() # wait for all threads to finish
+    ctr_stop = time.perf_counter()
+    print('Draw Time:', ctr_stop - ctr_start) # 14 seconds
+    CheckEvents()  # check quit event
+
 
 # def mandelbrot_set(x, y): # single thread
 #    print('Single Thread')
