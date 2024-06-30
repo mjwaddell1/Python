@@ -71,7 +71,7 @@ def Generate_Colors(): # color wheel
         clr = colorsys.hsv_to_rgb(hue/float(iterations), 0.6, 1.0)
         colors.append((int(clr[0]*255), int(clr[1]*255), int(clr[2]*255)))
     mid = int(iterations/2.0)
-    colors = colors[mid:] + colors[:mid]
+    colors = colors[mid:] + colors[:mid] # shift starting color
     return colors
 
 colors = Generate_Colors()
