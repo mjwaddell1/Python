@@ -440,8 +440,8 @@ if __name__ == '__main__':
 
     printx('\n\nProcess Option Chains....')
     printx('[Symbol Price Change (EarnDay) Name]')
-    printx('   >>> [StrikeBuy  Ask Hit%]')
-    printx('   <<< [StrikeSell Bid %Strike %Spread(profit) [%StrikeGap]]\n')
+    printx('   >>> [StrikeSell Bid Hit%]')
+    printx('   <<< [StrikeBuy  Ask %Strike %Spread(profit) [%StrikeGap]]\n')
 
     # For each stock from FinViz, get call option chain
     # Goal is to find 2 call options where short strike is >= 5% under stock price
