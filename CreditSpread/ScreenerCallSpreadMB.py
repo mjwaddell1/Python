@@ -31,29 +31,34 @@ mbkey = 'yOA0bpDZMjKngTV------------------LLRayeWK4UGGfVjKJn'  # https://mboum.c
 ### THIS NO LONGER WORKS (403 forbidden)
 ### TODO - Use https://financialmodelingprep.com/api/v3/economic_calendar?from=2024-06-06&to=2024-06-12&apikey=xxxxx
 ### see StockJumpCheck.py
+### update - FMP no longer works
 
 def GetEconCalendar(endDate):  # from today 12am, to end date 11pm
-    fromDate = str(date.today())  # 2023-12-15
-    if type(endDate) == datetime.date:
-        toDate = str(endDate)  # 2023-12-19
-    else:
-        toDate = endDate  # string 2023-12-19
-    url = 'https://economic-calendar.tradingview.com/events'
-    payload = {
-        'from': f'{fromDate}T00:00:00.000Z',
-        'to': f'{toDate}T23:00:00.000Z',
-        'countries': 'US',
-        'minImportance': 0  # -1,0,1
-    }
-    data = requests.get(url, params=payload).json()
-    days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] # 0-6
-    resp = []
-    for r in data['result']:
-        cmt = '-'
-        if 'comment' in r.keys(): cmt = r['comment']
-        day = days[date.fromisoformat(r['date'][:10]).weekday()]
-        resp.append([r['importance'], r['date'][:10], day, r['title'], cmt])
-    return resp
+    try:
+        fromDate = str(date.today())  # 2023-12-15
+        if type(endDate) == datetime.date:
+            toDate = str(endDate)  # 2023-12-19
+        else:
+            toDate = endDate  # string 2023-12-19
+        url = 'https://economic-calendar.tradingview.com/events'
+        payload = {
+            'from': f'{fromDate}T00:00:00.000Z',
+            'to': f'{toDate}T23:00:00.000Z',
+            'countries': 'US',
+            'minImportance': 0  # -1,0,1
+        }
+        data = requests.get(url, params=payload).json()
+        days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']  # 0-6
+        resp = []
+        for r in data['result']:
+            cmt = '-'
+            if 'comment' in r.keys(): cmt = r['comment']
+            day = days[date.fromisoformat(r['date'][:10]).weekday()]
+            resp.append([r['importance'], r['date'][:10], day, r['title'], cmt])
+        return resp
+    except Exception as ex:
+        print('GetEconCalendar ERROR:', ex)
+        return None
 
 #  FinViz scraper functions
 def GetFinVizStocksCmt(filters=None):  # scrape comment block
@@ -499,10 +504,11 @@ if __name__ == '__main__':
 
     print('\n-- Economic Events --')
     evts = GetEconCalendar(expdate)
-    starred = filter(lambda e: e[0] == 1, evts)
-    print('\n'.join([str(x[:-1]).replace('0,','   ').replace('1,','***') for x in starred]))
-    print()
-    print('\n'.join([str(x).replace('0,','   ').replace('1,','***') for x in evts]))
+    if evts:
+        starred = filter(lambda e: e[0] == 1, evts)
+        print('\n'.join([str(x[:-1]).replace('0,','   ').replace('1,','***') for x in starred]))
+        print()
+        print('\n'.join([str(x).replace('0,','   ').replace('1,','***') for x in evts]))
 
     printx('\n -- Done --\n')
 
