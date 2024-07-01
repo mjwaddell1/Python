@@ -20,3 +20,4 @@ Notes:
 - The Strike % is the differece between the current stock price and the sell option strike price. The stock price must rise this percent for the option to go ITM.
 - The Profit % is the profit if the credit spread is successful and both options expire OTM.
 - The Strike Gap % is the percent the stock price must rise (after going ITM) to lose the entire investement.
+- All option combinations are checked based on minimum required values (profit %, strike gap, option price, price spread) set in script.
