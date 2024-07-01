@@ -4,8 +4,8 @@ import numpy as np
 pygame.init() # required for screen info
 # open full screen
 infoObject = pygame.display.Info()
-scr_width = infoObject.current_w  #1500
-scr_height = infoObject.current_h  #900
+scr_width = infoObject.current_w   # 1920
+scr_height = infoObject.current_h  # 1080
 window = pygame.display.set_mode((scr_width, scr_height))
 pygame.display.set_caption("Fractal")
 
