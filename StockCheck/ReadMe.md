@@ -8,15 +8,19 @@ The earnings chart shows the last 4 quarters of earnings reports (actual\estimat
 The price chart shows closing prices for the last year (250 trading days).
 The option spread chart shows option prices for the 6 month options (call/puts). The x-axis shows the strike price relative to the stock price. The y-axis shows the call price relative to the stock price. The c/p ratio is the option prices (call/put) 20% away from the stock price. A ratio over 1 indicates a bullish sentiment on the stock. The script filters on ratios over 1.75.
   
-![image](https://github.com/mjwaddell1/Python/assets/35202179/70c67d5d-fdae-4aae-8c8b-f15552a8777b)
+![image](https://github.com/mjwaddell1/Python/assets/35202179/70c67d5d-fdae-4aae-8c8b-f15552a8777b)<br/>
 
-![image](https://github.com/mjwaddell1/Python/assets/35202179/1ca8ae58-b359-4593-bedd-79fbc32c12d4)
+![image](https://github.com/mjwaddell1/Python/assets/35202179/f11af1e6-14ab-43c1-938a-930739a9b23c)
+![image](https://github.com/mjwaddell1/Python/assets/35202179/1ca8ae58-b359-4593-bedd-79fbc32c12d4)<br/>
 
-![image](https://github.com/mjwaddell1/Python/assets/35202179/63ba1e76-0e10-4ebd-b106-f7de19078c6a)
+![image](https://github.com/mjwaddell1/Python/assets/35202179/f11af1e6-14ab-43c1-938a-930739a9b23c)
+![image](https://github.com/mjwaddell1/Python/assets/35202179/63ba1e76-0e10-4ebd-b106-f7de19078c6a)<br/>
 
+![image](https://github.com/mjwaddell1/Python/assets/35202179/f11af1e6-14ab-43c1-938a-930739a9b23c)
+![image](https://github.com/mjwaddell1/Python/assets/35202179/f11af1e6-14ab-43c1-938a-930739a9b23c)
 <b>Zacks Rank: <font color="green">1 Strong Buy</font></b>
 
-<br><br><b>Economic Events</b>
+<br/><br/><b>Economic Events</b>
 <table>
 <tr><td>2024-06-07</td><td>&nbsp;&nbsp;&nbsp;Fri</td><td>&nbsp;&nbsp;&nbsp;ECB President Lagarde Speech</td></tr>
 <tr><td>2024-06-07</td><td>&nbsp;&nbsp;&nbsp;Fri</td><td>&nbsp;&nbsp;&nbsp;Unemployment Rate (May)</td></tr>
