@@ -6,6 +6,8 @@ The application allows the user to select a portion of the fractal then zoom in 
 
 Process Explorer indicates additional threads being used so it's unclear why the threading library does not improve render speed.
 
+Using multi-process (FractalProcess.py) decreased the render time (50 vs 14 seconds). CPU utilization rose to 100% using all cores though the code is more complex than multi-threading.
+
 Python version used: Python 3.11.5 | packaged by Anaconda, Inc. | (main, Sep 11 2023, 13:26:23) [MSC v.1916 64 bit (AMD64)] on win32
 
 Process Explorer - Single thread:
@@ -14,7 +16,10 @@ Process Explorer - Single thread:
 Process Explorer - Multiple threads:
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/c1f5760f-68dd-4974-9208-78c7a66fa424)
 
-For reference - My PC has 6 cores and the CPU usage remains low during the render process:
+Process Explorer - Multiple processes:
+![image](https://github.com/mjwaddell1/Python/assets/35202179/8c4c6a9f-7879-4697-b63d-7d4262db19a4)
+
+For reference - My PC has 6 cores and the CPU usage remains low during the render process (multi-threading):
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/7d565db5-4a98-4b67-bb7c-291fa82c98e3)
 
 Initial image with selection rectangle:
