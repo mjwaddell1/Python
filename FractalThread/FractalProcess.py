@@ -37,7 +37,9 @@ def CheckEvents():
                     cur_frame = 0
                     frames[0].selection_rect = [0, 0, 0, 0] # reset selection
                     frames = frames[:1] # trim to 1st frame
-                if event.key == pygame.K_RETURN: # process selection rectangle
+                if (event.key == pygame.K_RETURN  # process selection rectangle
+                        and sel_rect[2] - sel_rect[0] > 0 
+                        and sel_rect[3] - sel_rect[1] > 0):
                     fract_rect = frames[cur_frame].fractal_rect[:] # don't overwrite history
                     temp = (fract_rect[0], fract_rect[1], fract_rect[2], fract_rect[3])
                     # new fractal boundaries based on selection rectangle
