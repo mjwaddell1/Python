@@ -153,5 +153,6 @@ if __name__ =="__main__": # needed for threading
         window.blit(frames[cur_frame].surface, (0, 0)) # redraw fractal image first
         sel_rect = frames[cur_frame].selection_rect
         r2 = (sel_rect[0], sel_rect[1], sel_rect[2]-sel_rect[0], sel_rect[3]-sel_rect[1]) # x,y,x_width,y_width
-        pygame.draw.rect(window, (200, 200, 200), r2, 2) # selection rectangle
+        if r2[2] > 0 and r2[3] > 0:
+            pygame.draw.rect(window, (200, 200, 200), r2, 2) # selection rectangle
         pygame.display.update()  # update screen
