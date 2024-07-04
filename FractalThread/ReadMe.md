@@ -1,4 +1,4 @@
-This code generates the Mandlebrot set. It uses a single thread or the threading module. This is a good candidate for multi-threading since each point value is calculated separately.
+This code generates the Mandlebrot set. It uses a single thread or the threading module. This is a good candidate for multi-threading since each point value is calculated independently.
 
 The execution time using the threading library is about the same as using a single thread. This is probably due to the GIL and true multithreading is not currently supported in Python.
 
@@ -6,7 +6,7 @@ The application allows the user to select a portion of the fractal then zoom in 
 
 Process Explorer indicates additional threads being used so it's unclear why the threading library does not improve render speed.
 
-Using multi-process (FractalProcess.py) decreased the render time (50 vs 14 seconds). CPU utilization rose to 100% using all cores though code complexity increased.
+Using multi-process (FractalProcess.py) decreased the render time (50 vs 14 seconds) though code complexity increased. CPU utilization rose to 100% using all cores.
 
 Python version used: Python 3.11.5 | packaged by Anaconda, Inc. | (main, Sep 11 2023, 13:26:23) [MSC v.1916 64 bit (AMD64)] on win32
 
