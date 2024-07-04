@@ -19,8 +19,11 @@ Process Explorer - Multiple threads:
 Process Explorer - Multiple processes:
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/8c4c6a9f-7879-4697-b63d-7d4262db19a4)
 
-For reference - My PC has 6 cores and the CPU usage remains low during the render process (multi-threading):
+For reference - CPU usage remained low using multi-threading during the render process:
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/7d565db5-4a98-4b67-bb7c-291fa82c98e3)
+
+For reference - CPU usage went to 100% using multiple processes during the render process:
+![image](https://github.com/mjwaddell1/Python/assets/35202179/8cbc01bb-009f-4d0c-9d56-8c87423a2d26)
 
 Initial image with selection rectangle:
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/6b2631ef-10f6-4bcc-baa6-3e2c8853d8fd)
