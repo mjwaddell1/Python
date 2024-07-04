@@ -142,7 +142,7 @@ def DrawFractal(fract_rect):
     drawing = False
     return sfc_fractal
 
-if __name__ =="__main__": # needed for threading. This section run in main process, but not child processes.
+if __name__ =="__main__": # needed for threading. This section runs in primary process, but not child processes.
     freeze_support()  # needed for Windows
     
     # with multiple processes, the script is run multiple times. Any single-run code should be in the "__main__" section.
