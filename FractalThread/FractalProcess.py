@@ -142,16 +142,16 @@ def DrawFractal(fract_rect):
     drawing = False
     return sfc_fractal
 
-if __name__ =="__main__": # needed for threading
+if __name__ =="__main__": # needed for threading. This section run in main process, but not child processes.
     freeze_support()  # needed for Windows
-
+    
+    # with multiple processes, the script is run multiple times. Any single-run code should be in the "__main__" section.
     import pygame # import once
-
     pygame.init()  # required for screen info
     # open full screen
     infoObject = pygame.display.Info()
-    scr_width = infoObject.current_w  # 1500
-    scr_height = infoObject.current_h  # 900
+    scr_width = infoObject.current_w   # 1920
+    scr_height = infoObject.current_h  # 1080
     window = pygame.display.set_mode((scr_width, scr_height))
     pygame.display.set_caption("Fractal")
 
