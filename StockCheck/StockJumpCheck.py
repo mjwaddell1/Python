@@ -45,9 +45,9 @@ def printx(*args):
 def rnd2(val):  # round 2 decimal places
     return str(int(val * 100) / 100.0)
 
-def GetZackRank(stk):
+def GetZacksRank(stk):
     url = ''
-    rank = -1
+    rank = 0 # default error
     try:
         url = 'https://www.zacks.com/stock/quote/' + stk
         hdrs = {
@@ -55,13 +55,13 @@ def GetZackRank(stk):
 
         rsp = requests.get(url, headers=hdrs, verify=False)
         # print(rsp.text)
-        ranklst = ['Strong Buy', 'Buy', 'Hold', 'Sell', 'Strong Sell', 'ERROR']
+        ranklst = ['ERROR', 'Strong Buy', 'Buy', 'Hold', 'Sell', 'Strong Sell']
         if '1-Strong' in rsp.text: rank=1
         if '2-Buy' in rsp.text: rank=2
         if '3-Hold' in rsp.text: rank=3
         if '4-Sell' in rsp.text: rank=4
         if '5-Strong' in rsp.text: rank=5
-        return rank, ranklst[rank-1]
+        return rank, ranklst[rank]
     except Exception as ex:
         printx('ERROR GetZackRank: ', url, ex)
         return rank, 'ERROR'
