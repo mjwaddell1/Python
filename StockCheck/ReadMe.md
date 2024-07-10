@@ -1,5 +1,4 @@
-StockBottomCheck just scans a set list of stocks for a low price and sends an alert (email).
-
+Stock Bottom Check just scans a set list of stocks for a low price and sends an alert (email).
 
 For Stock Jump Check and Stock Option Check, stocks are filter based on price or option trends. An email is sent with the filtered stocks. The Stock Jump Check includes the economic calendar.
 
