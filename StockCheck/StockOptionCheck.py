@@ -120,7 +120,7 @@ def GetEarningHistory(stks): # last 4 quarters actual\estimate
         data = {}
         for stk in stks:
             print('.', end='', flush=True)
-            # https://mboum.com/api/v1/qu/quote/earnings/?symbol=AAPL&apikey=o6eB0qL4XcBX4tHdyrGvt2lDoKcaC0v8WM9HWLnOpr1HjNhkfpV5G8Kj96kg
+            # https://mboum.com/api/v1/qu/quote/earnings/?symbol=AAPL&apikey=demo
             url = 'https://mboum.com/api/v1/qu/quote/earnings/?symbol=' + stk + '&apikey=' + mbkey
             rsp = requests.get(url, verify=False).json()
             if 'error' in rsp.keys():
