@@ -1,13 +1,10 @@
-import os
-
-import requests, warnings, urllib3, datetime, time
+import os, requests, warnings, urllib3, datetime, time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
 from time import sleep
 import matplotlib.pyplot as plt
 import numpy as np
-import datetime
 from urllib3.exceptions import InsecureRequestWarning
 
 warnings.simplefilter(action='ignore', category=Warning) # suppress requests warning
@@ -46,6 +43,27 @@ def printx(*args):
 
 def rnd2(val):  # round 2 decimal places
     return str(int(val * 100) / 100.0)
+
+def GetZacksRank(stk):
+    url = ''
+    rank = 0 # default error
+    try:
+        url = 'https://www.zacks.com/stock/quote/' + stk
+        hdrs = {
+            "User-Agent": "Mozilla/5.0,(Windows NT 10.0; Win64; x64),AppleWebKit/537.36,(KHTML, like Gecko),Chrome/110.0.0.0,Safari/537.36"}
+
+        rsp = requests.get(url, headers=hdrs, verify=False)
+        # print(rsp.text)
+        ranklst = ['ERROR', 'Strong Buy', 'Buy', 'Hold', 'Sell', 'Strong Sell']
+        if '1-Strong' in rsp.text: rank=1
+        if '2-Buy' in rsp.text: rank=2
+        if '3-Hold' in rsp.text: rank=3
+        if '4-Sell' in rsp.text: rank=4
+        if '5-Strong' in rsp.text: rank=5
+        return rank, ranklst[rank]
+    except Exception as ex:
+        printx('ERROR GetZackRank: ', url, ex)
+        return rank, 'ERROR'
 
 def GetStockNames(): # stock name\exchange, could probably just run this once, stock list rarely changes
     print('Get Stock Names..')
@@ -102,7 +120,7 @@ def GetEarningHistory(stks): # last 4 quarters actual\estimate
         data = {}
         for stk in stks:
             print('.', end='', flush=True)
-            # https://mboum.com/api/v1/qu/quote/earnings/?symbol=AAPL&apikey=o6eB0qL4XcBX4tHdxxxxxxxxxxxxxxxxOpr1HjNhkfpV5G8Kj96kg
+            # https://mboum.com/api/v1/qu/quote/earnings/?symbol=AAPL&apikey=o6eB0qL4XcBX4tHdyrGvt2lDoKcaC0v8WM9HWLnOpr1HjNhkfpV5G8Kj96kg
             url = 'https://mboum.com/api/v1/qu/quote/earnings/?symbol=' + stk + '&apikey=' + mbkey
             rsp = requests.get(url, verify=False).json()
             if 'error' in rsp.keys():
@@ -163,93 +181,103 @@ def FloatDict(val, key=None): # fucking MBoum changed number: 'ask': {'raw': 44.
 
 # get options chain for specific symbol
 def GetOptionsMB(stk, expdates): # return options for first matching date
-    # print('GetOptionsMB', stk, exp)
-    retry = 0
-    while retry < 3:  # if request fails
-        retry += 1
-        exp = datetime.date.fromisoformat(expdates[0])
-        # https://mboum.com/api/v1/op/option/?symbol=AAPL&expiration=1674172800&apikey=demo
-        expts = 0
-        while True:
-            expdate = str(int(datetime.datetime.combine(exp, datetime.datetime.min.time()).replace(
-                                 tzinfo=datetime.timezone.utc).timestamp()))
-            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-            # get option list
-            if expts: # 2nd try
-                url = f'https://mboum.com/api/v1/op/option/?symbol={stk}&expiration={expts}&apikey={mbkey}'
-            else: # 1st try
-                url = f'https://mboum.com/api/v1/op/option/?symbol={stk}&expiration={expdate}&apikey={mbkey}'
-            printx(stk, exp, url)
-            hdrs = {
-                "User-Agent": "Mozilla/5.0,(Windows NT 10.0; Win64; x64),AppleWebKit/537.36,(KHTML, like Gecko),Chrome/110.0.0.0,Safari/537.36"}
-            rsp = requests.get(url, verify=False, headers=hdrs).json()  # all call options for this symbol
-            # if first try and missing calls\puts, find next expire date and retry (only retry once)
-            if (not expts and
-                    (type(rsp['data']['optionChain']['result'][0]['options'][0]) is list or # empty option list
-                     'calls' not in rsp['data']['optionChain']['result'][0]['options'][0].keys() or
-                     'puts' not in rsp['data']['optionChain']['result'][0]['options'][0].keys() or
-                     not len(rsp['data']['optionChain']['result'][0]['options'][0]['calls']) or
-                     not len(rsp['data']['optionChain']['result'][0]['options'][0]['puts']))): # bad expire date
-                found = False
-                for ts in rsp['data']['optionChain']['result'][0]['expirationDates']:
-                    if ts > int(expdate): # find next valid expire date
-                        found = True
-                        expts = ts # for next api call
-                        exp = datetime.date.fromtimestamp(ts) # 2024-06-23
-                        break
-                if not found:
-                    printx(stk, '- No expire dates found')
-                    return None, None # no valid expire date found
-            else:
-                break # got option list or 2nd try
+    try:
+        # print('GetOptionsMB', stk, exp)
+        retry = 0
+        while retry < 3:  # if request fails
+            retry += 1
+            exp = datetime.date.fromisoformat(expdates[0])
+            # https://mboum.com/api/v1/op/option/?symbol=AAPL&expiration=1674172800&apikey=demo
+            expts = 0
+            while True:
+                expdate = str(int(datetime.datetime.combine(exp, datetime.datetime.min.time()).replace(
+                                     tzinfo=datetime.timezone.utc).timestamp()))
+                requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
+                # get option list
+                if expts: # 2nd try
+                    url = f'https://mboum.com/api/v1/op/option/?symbol={stk}&expiration={expts}&apikey={mbkey}'
+                else: # 1st try
+                    url = f'https://mboum.com/api/v1/op/option/?symbol={stk}&expiration={expdate}&apikey={mbkey}'
+                printx(stk, exp, url)
+                hdrs = {
+                    "User-Agent": "Mozilla/5.0,(Windows NT 10.0; Win64; x64),AppleWebKit/537.36,(KHTML, like Gecko),Chrome/110.0.0.0,Safari/537.36"}
+                rsp = requests.get(url, verify=False, headers=hdrs).json()  # all call options for this symbol
+                # if first try and missing calls\puts, find next expire date and retry (only retry once)
+                if (not expts and
+                        (type(rsp['data']['optionChain']['result'][0]['options'][0]) is list or # empty option list
+                         'calls' not in rsp['data']['optionChain']['result'][0]['options'][0].keys() or
+                         'puts' not in rsp['data']['optionChain']['result'][0]['options'][0].keys() or
+                         not len(rsp['data']['optionChain']['result'][0]['options'][0]['calls']) or
+                         not len(rsp['data']['optionChain']['result'][0]['options'][0]['puts']))): # bad expire date
+                    found = False
+                    for ts in rsp['data']['optionChain']['result'][0]['expirationDates']:
+                        if ts > int(expdate): # find next valid expire date
+                            found = True
+                            expts = ts # for next api call
+                            exp = datetime.date.fromtimestamp(ts) # 2024-06-23
+                            break
+                    if not found:
+                        printx(stk, '- No expire dates found')
+                        return None, None # no valid expire date found
+                else:
+                    break # got option list or 2nd try
 
-        if not len(rsp['data']['optionChain']['result'][0]['options'][0]['calls'])\
-                    or not len(rsp['data']['optionChain']['result'][0]['options'][0]['puts']):
-            print(stk,'- Missing options')
-            return None, None
+            if not len(rsp['data']['optionChain']['result'][0]['options'][0]['calls'])\
+                        or not len(rsp['data']['optionChain']['result'][0]['options'][0]['puts']):
+                print(stk,'- Missing options')
+                return None, None
 
-        stkprice = rsp['data']['optionChain']['result'][0]['quote']['regularMarketPrice']  # realtime
-        stkchgpct = rsp['data']['optionChain']['result'][0]['quote']['regularMarketChangePercent']  # realtime
-        stkchg = rsp['data']['optionChain']['result'][0]['quote']['regularMarketChange']  # realtime
-        info = {'stkprice': stkprice, 'stkchgpct': stkchgpct, 'expiration': str(exp)}
-        data = {'calls': [], 'puts': []}
-        # get option details
-        if type(rsp['data']['optionChain']['result'][0]['options'][0]) is list:
-            print(stk, exp, '- No options found\n' + url)
-            return None,None
-        if (not len(rsp['data']['optionChain']['result'][0]['options'][0]['calls']) and
-                not len(rsp['data']['optionChain']['result'][0]['options'][0]['puts'])):
-            printx(stk, exp, '- No options found')
-        for cll in rsp['data']['optionChain']['result'][0]['options'][0]['calls']:
-            if bool(cll['inTheMoney']): continue  # skip ITM
-            if not 'bid' in cll or FloatDict(cll['bid']) < 0.1: continue  # too far OTM, no price
-            if not 'ask' in cll or FloatDict(cll['ask']) < 0.1: continue
-            delta = cll['change']['raw'] / (stkchg+.000001) # probability of expiring in the money
-            ratio = cll['percentChange']['raw'] / (stkchgpct+.000001) # leverage amount
-            # print(cll['change']['raw'], stkchg)
-            data['calls'].append({
-                 'strike': FloatDict(cll['strike']),
-                 'bid': FloatDict(cll['bid']),
-                 'ask': FloatDict(cll['ask']),
-                 'delta': delta,
-                 'ratio': ratio
-            })
-        for put in rsp['data']['optionChain']['result'][0]['options'][0]['puts']:
-            if bool(put['inTheMoney']): continue  # skip ITM
-            if not 'bid' in put or FloatDict(put['bid']) < 0.1: continue  # too far OTM, no price
-            if not 'ask' in put or FloatDict(put['ask']) < 0.1: continue
-            delta = put['change']['raw'] / (stkchg+.000001) # probability of expiring in the money
-            ratio = put['percentChange']['raw'] / (stkchgpct+.000001) # leverage amount
-            data['puts'].append({
-                 'strike': FloatDict(put['strike']),
-                 'bid': FloatDict(put['bid']),
-                 'ask': FloatDict(put['ask']),
-                 'delta': delta,
-                 'ratio': ratio
-            })
-        print('.', end='', flush=True) # need flush to force print
-        printx(info, data)
-        return info,data # price, options
+            stkprice = rsp['data']['optionChain']['result'][0]['quote']['regularMarketPrice']  # realtime
+            stkchgpct = rsp['data']['optionChain']['result'][0]['quote']['regularMarketChangePercent']  # realtime
+            stkchg = rsp['data']['optionChain']['result'][0]['quote']['regularMarketChange']  # realtime
+            info = {'stkprice': stkprice, 'stkchgpct': stkchgpct, 'expiration': str(exp)}
+            data = {'calls': [], 'puts': []}
+            # get option details
+            if type(rsp['data']['optionChain']['result'][0]['options'][0]) is list:
+                print(stk, exp, '- No options found\n' + url)
+                return None,None
+            if (not len(rsp['data']['optionChain']['result'][0]['options'][0]['calls']) and
+                    not len(rsp['data']['optionChain']['result'][0]['options'][0]['puts'])):
+                printx(stk, exp, '- No options found')
+            for cll in rsp['data']['optionChain']['result'][0]['options'][0]['calls']:
+                if bool(cll['inTheMoney']): continue  # skip ITM
+                if not 'bid' in cll or FloatDict(cll['bid']) < 0.1: continue  # too far OTM, no price
+                if not 'ask' in cll or FloatDict(cll['ask']) < 0.1: continue
+                if not 'percentChange' in cll:
+                    printx(stk, 'calls - percentChange not found\n', url)
+                    continue
+                delta = cll['change']['raw'] / (stkchg+.000001) # probability of expiring in the money
+                ratio = cll['percentChange']['raw'] / (stkchgpct+.000001) # leverage amount
+                # print(cll['change']['raw'], stkchg)
+                data['calls'].append({
+                     'strike': FloatDict(cll['strike']),
+                     'bid': FloatDict(cll['bid']),
+                     'ask': FloatDict(cll['ask']),
+                     'delta': delta,
+                     'ratio': ratio
+                })
+            for put in rsp['data']['optionChain']['result'][0]['options'][0]['puts']:
+                if bool(put['inTheMoney']): continue  # skip ITM
+                if not 'bid' in put or FloatDict(put['bid']) < 0.1: continue  # too far OTM, no price
+                if not 'ask' in put or FloatDict(put['ask']) < 0.1: continue
+                if not 'percentChange' in put:
+                    printx(stk, 'puts - percentChange not found\n', url)
+                    continue
+                delta = put['change']['raw'] / (stkchg+.000001) # probability of expiring in the money
+                ratio = put['percentChange']['raw'] / (stkchgpct+.000001) # leverage amount
+                data['puts'].append({
+                     'strike': FloatDict(put['strike']),
+                     'bid': FloatDict(put['bid']),
+                     'ask': FloatDict(put['ask']),
+                     'delta': delta,
+                     'ratio': ratio
+                })
+            print('.', end='', flush=True) # need flush to force print
+            printx(info, data)
+            return info,data # price, options
+    except Exception as ex:
+        printx('ERROR: GetOptionsMB', stk, expdates)
+        return None, None
 
 def GetImageData(filename): # for email
     with open(filename, 'rb') as f:
@@ -428,7 +456,11 @@ try:
 
     baselink = 'https://www.google.com/finance/quote/' # for quote link in email
     stock_list = [s['Ticker'] for s in stock_list] # just tickers
-    printx(stock_list)
+
+    # print(stock_list)
+    # quit()
+
+    # stock_list = stock_list[:15]
 
     # stock_list = ['VTSI','DFLI','NVDA']  # ########## testing
 
@@ -492,7 +524,7 @@ try:
         printx(stk)
         # price line chart
         hist = GetStockHistory(stk)[-250:] # 1 year
-        CreateChartImage(stk + ' - ' + GetStockName(stk)['name'], list(range(len(hist))), [p[3] for p in hist],
+        CreateChartImage(f'{stk} - {GetStockName(stk)["name"]} ({hist[-1][3]})', list(range(len(hist))), [p[3] for p in hist],
                          'Day','Close', False, stk + '.png', None)
         images.append(stk + '.png') # for email
         html += f'<br/><img src="cid:{stk}"><br/>\n'
@@ -507,6 +539,14 @@ try:
         # add images to email
         images.append(stk + '_OptionSpread.png')  # for email
         html += f'<br/><img src="cid:{stk}_OptionSpread"><br/>\n'
+        rnk = GetZacksRank(stk)
+        time.sleep(1) # in case zacks is checking
+        if rnk[0] < 3: # 1,2 strong\buy
+            html += f'<b><br/>Zacks Rank: <font color=green>{rnk[0]} {rnk[1]}</font><br/></b>\n'
+        elif rnk[0] > 3: # 4,5 strong\sell
+            html += f'<b><br/>Zacks Rank: <font color=red>{rnk[0]} {rnk[1]}</font><br/></b>\n'
+        else: # 3 hold
+            html += f'<b><br/>Zacks Rank: {rnk[0]} {rnk[1]}<br/></b>\n' # black
         html += f'<br/><a href="{baselink}{stk}:{GetStockName(stk)["exchange"]}" style="font-size:20px;">GoogleFinance {stk}</a><br/>\n'
         stkcnt += 1
     html += '</center></body></html>'
@@ -514,5 +554,6 @@ try:
     if stkcnt:
         SendEmail(html,f'Stock Option Alert ({stkcnt})', images)
 except Exception as ex:
+    printx(str(ex))
     html = f'<html><body><b>{str(ex)}</b></body></html>'
     SendEmail(html, f'Stock Option Alert - ERROR', [])
