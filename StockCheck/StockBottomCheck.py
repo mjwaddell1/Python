@@ -75,39 +75,42 @@ sample = {  # from finhub
 token = 'cl1uje1r01qinXXXXXXXXXXinfqo7eig'  # finhub free account
 
 stocks = [
+    # ('VIX',  'Volatility Index', 'NASDAQ', 12), # volatility
     ('AMD',  'Advanced Micro Devices', 'NASDAQ', 70), # AMD
     ('AMZN', 'Amazon', 'NASDAQ', 100), # Amazon
+    ('BRZU', 'Brazil', 'NYSEARCA', 60), # Brazil
     ('CFA',  'Volatility Index', 'NASDAQ', 60), # volatility
-    ('GM',   'General Motors', 'NYSE', 30), # Gen Motors
-    ('INTC', 'Intel', 'NASDAQ', 26), # Intel
-    ('ON',   'Semiconductor', 'NASDAQ', 60), # Semiconductor
-    ('ORLY', 'OReilly Auto', 'NASDAQ', 930), # OReilly Auto
-    ('TM',   'Toyota', 'NYSE', 175), # Toyota
-    ('UTSL', 'Volatility Index', 'NASDAQ', 20), # VG utility index
-    ('VAW',  'Materials Index', 'NASDAQ', 150), # VG materials index
-    # ('VIX',  'Volatility Index', 'NASDAQ', 12), # volatility
-    ('WGO',  'Winnebago', 'NYSE', 50), # Winnebago
-    ('DIS',  'Disney', 'NYSE', 80), # Disney
-    ('EXPE', 'Expedia', 'NASDAQ', 95), # Expedia
-    ('EPR',  'REIT', 'NYSE', 36), # REIT
-    ('NUE',  'Steel', 'NYSE', 145), # Steel
-    ('WMT',  'Walmart', 'NYSE', 50), # Walmart
-    ('JPM',  'Chase', 'NYSE', 120), # Chase
-    ('BRZU', 'Brazil', 'NYSEARCA', 65), # Brazil
     ('CURE', 'Healthcare', 'NYSEARCA', 80), # Healthcare
     ('DFEN', 'Defence', 'NYSEARCA', 14), # Defense
+    ('DIS',  'Disney', 'NYSE', 80), # Disney
+    ('EPR',  'REIT', 'NYSE', 36), # REIT
     ('EURL', 'Europe Index', 'NYSEARCA', 16), # Europe
+    ('EXPE', 'Expedia', 'NASDAQ', 95), # Expedia
     ('FLYU', 'Travel Index', 'NYSEARCA', 25), # Travel
     ('GDXU', 'Gold', 'NYSEARCA', 20), # Gold
+    ('GM',   'General Motors', 'NYSE', 30), # Gen Motors
     ('GUSH', 'Oil', 'NYSEARCA', 30), # Oil
-    ('LABU', 'Biotech', 'NYSEARCA', 160), # Biotech
+    ('IAG',  'Gold', 'NYSE', 2.3), # Gold
+    ('INTC', 'Intel', 'NASDAQ', 26), # Intel
+    ('JPM',  'Chase', 'NYSE', 120), # Chase
+    ('LABU', 'Biotech', 'NYSEARCA', 90), # Biotech
     ('MEXX', 'Mexico', 'NYSEARCA', 20), # Mexico
-    ('NUGT', 'Gold', 'NYSEARCA', 25), # Gold
     ('NRGU', 'Oil', 'NYSEARCA', 400), # Oil
+    ('NUE',  'Steel', 'NYSE', 145), # Steel
+    ('NUGT', 'Gold', 'NYSEARCA', 25), # Gold
+    ('OLLI', 'Ollies Bargain Outlet', 'NASDAQ', 45), # Ollies
+    ('ON',   'Semiconductor', 'NASDAQ', 60), # Semiconductor
+    ('ORLY', 'OReilly Auto', 'NASDAQ', 930), # OReilly Auto
     ('SKYU', 'Cloud Computing', 'NYSEARCA', 16), # Cloud computing
     ('TECL', 'Technology', 'NYSEARCA', 16), # Technology
+    ('THO',  'Thor RV', 'NYSE', 70), # Thor RV
+    ('TM',   'Toyota', 'NYSE', 175), # Toyota
     ('TNA',  'Small Cap Index', 'NYSEARCA', 25), # Small cap
-    ('TQQQ', 'NASDAQ Index', 'NYSEARCA', 20) # NASDAQ
+    ('TQQQ', 'NASDAQ Index', 'NYSEARCA', 20), # NASDAQ
+    ('UTSL', 'Volatility Index', 'NASDAQ', 20), # VG utility index
+    ('VAW',  'Materials Index', 'NASDAQ', 150), # VG materials index
+    ('WGO',  'Winnebago', 'NYSE', 40), # Winnebago
+    ('WMT',  'Walmart', 'NYSE', 50), # Walmart
 ]
 
 curdate = datetime.datetime.today().isoformat()[:10]
