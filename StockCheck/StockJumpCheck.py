@@ -530,7 +530,12 @@ try:
         html += f'<br/><img src="cid:{stk}_Earnings"><br/>\n'
         rnk = GetZackRank(stk)
         time.sleep(1) # in case zacks is checking
-        html += f'<br/>Zack Rank: {rnk[0]} {rnk[1]}<br/>\n'
+        if rnk[0] in [-1, 0, 3]: # 3 hold, 0 error
+            html += f'<b><br/>Zacks Rank: {rnk[0]} {rnk[1]}<br/></b>\n'  # black
+        elif rnk[0] < 3: # 1,2 strong\buy
+            html += f'<b><br/>Zacks Rank: <font color=green>{rnk[0]} {rnk[1]}</font><br/></b>\n'
+        elif rnk[0] > 3: # 4,5 strong\sell
+            html += f'<b><br/>Zacks Rank: <font color=red>{rnk[0]} {rnk[1]}</font><br/></b>\n'
         html += f'<br/><a href="{baselink}{stk}:{GetStockName(stk)["exchange"]}" style="font-size:20px;">GoogleFinance {stk}</a><br/>\n'
     html += AddEconEvents()
     html += '</center></body></html>'
