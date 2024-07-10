@@ -85,7 +85,7 @@ def mandelbrot_process(xyi): # generate single column
     x,y,i = xyi
     result = []
     for j in range(len(y)):
-        c = complex(x[i], y[j])
+        c = complex(x, y[j])
         z = complex(0, 0)
         count = mandelbrot(c, z)
         # window.set_at((i,j), (0, (count*5) % 200, 0)) # shades of green, more contrast
@@ -105,7 +105,7 @@ def mandelbrot_set(x, y): # use multi-process
     ctr = 0
     for i in range(len(x)): # all columns
         ctr += 1
-        args_list.append((x, y, i)) # arguments for child processes
+        args_list.append((x[i], y, i)) # arguments for child processes
         if (ctr == proc_cnt) or (ctr == len(x)-1): # process 12 columns at a time
             ctr = 0
             results = pool.map(mandelbrot_process, args_list) # wait for child processes
