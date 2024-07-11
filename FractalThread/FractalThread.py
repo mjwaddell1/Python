@@ -1,4 +1,4 @@
-import copy, math, pygame, time, threading, colorsys
+import pygame, time, threading, colorsys
 import numpy as np
 
 pygame.init() # required for screen info
@@ -44,8 +44,8 @@ def CheckEvents():
                     cur_frame = 0
                     frames[0].selection_rect = [0, 0, 0, 0] # reset selection
                     frames = frames[:1] # trim to 1st frame
-                if (event.key == pygame.K_RETURN  # process selection rectangle
-                        and sel_rect[2] - sel_rect[0] > 0 
+                if (event.key == pygame.K_RETURN # process selection rectangle
+                        and sel_rect[2] - sel_rect[0] > 0
                         and sel_rect[3] - sel_rect[1] > 0):
                     fract_rect = frames[cur_frame].fractal_rect[:] # don't overwrite history
                     temp = (fract_rect[0], fract_rect[1], fract_rect[2], fract_rect[3])
@@ -65,21 +65,21 @@ def CheckEvents():
                     cur_frame += 1
 
 
-iterations = 360 # even number, higher value has more detail, longer render time
+iterations = 1000 # even number, higher value has more detail, longer render time
 
-def Generate_Colors(): # color wheel
+def GenerateColors(): # color wheel
     colors = []
     for hue in range(iterations):
-        clr = colorsys.hsv_to_rgb(hue/float(iterations), 0.6, 1.0)
+        clr = colorsys.hsv_to_rgb(hue/float(iterations), 0.5, 0.5)
         colors.append((int(clr[0]*255), int(clr[1]*255), int(clr[2]*255)))
-    mid = int(iterations/2.0)
+    mid = int(iterations * 0.7)
     colors = colors[mid:] + colors[:mid] # shift starting color
     return colors
 
-colors = Generate_Colors()
+colors = GenerateColors()
 
 # https://medium.com/nerd-for-tech/programming-fractals-in-python-d42db4e2ed33
-def mandelbrot(c, z):
+def Mandelbrot(c, z): # calculate single point
    count = 0
    for a in range(iterations):
       z = z**2 + c
@@ -88,22 +88,22 @@ def mandelbrot(c, z):
          break
    return count
 
-def mandelbrot_thread(x,y,i): # generate single column
+def MandelbrotThread(x,y,i): # generate single column
     for j in range(len(y)):
         c = complex(x[i], y[j])
         z = complex(0, 0)
-        count = mandelbrot(c, z)
-        window.set_at((i,j), (0, (count*5) % 200, 0)) # shades of green, more contrast
-        # window.set_at((i,j), (0, count/iterations*250, 0)) # shades of green, single scale
-        # window.set_at((i, j), colors[count-1])  # color wheel
+        count = Mandelbrot(c, z)
+        # window.set_at((i,j), (0, (count*5) % 200, 0)) # shades of green, more contrast
+        # window.set_at((i,j), (0, count/iterations*200, 0)) # shades of green, single scale
+        window.set_at((i, j), colors[count-1])  # color wheel
     pygame.display.update()  # each column
 
 threads = []
-def mandelbrot_set(x, y): # use multithreading
+def MandelbrotSet(x, y): # use multithreading
     print('Multi Thread')
     ctr_start = time.perf_counter()
     for i in range(len(x)):
-        t1 = threading.Thread(target=mandelbrot_thread, args=(x,y,i)) # each column
+        t1 = threading.Thread(target=MandelbrotThread, args=(x,y,i)) # each column
         threads.append(t1)
         CheckEvents()  # check quit event
         t1.start() # threads are queued here
@@ -112,7 +112,6 @@ def mandelbrot_set(x, y): # use multithreading
     ctr_stop = time.perf_counter()
     print('Draw Time:', ctr_stop - ctr_start) # 14 seconds
     CheckEvents()  # check quit event
-
 
 # def mandelbrot_set(x, y): # single thread
 #    print('Single Thread')
@@ -135,7 +134,7 @@ def DrawFractal(fract_rect):
     x = np.linspace(fract_rect[0], fract_rect[2], scr_width)
     y = np.linspace(fract_rect[1], fract_rect[3], scr_height)
     # create our mandelbrot set
-    mandelbrot_set(x, y) # generate fractal image
+    MandelbrotSet(x, y) # generate fractal image
     sfc_fractal = window.copy() # store fractal image for quick redraw
     drawing = False
     return sfc_fractal
