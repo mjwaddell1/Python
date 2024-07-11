@@ -113,7 +113,7 @@ def MandelbrotSet(x, y): # use multithreading
     print('Draw Time:', ctr_stop - ctr_start) # 14 seconds
     CheckEvents()  # check quit event
 
-# def mandelbrot_set(x, y): # single thread
+# def MandelbrotSet(x, y): # single thread
 #    print('Single Thread')
 #    ctr_start = time.perf_counter()
 #    for i in range(len(x)):
