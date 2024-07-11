@@ -1,4 +1,4 @@
-This code generates the Mandlebrot set. It uses a single thread or the threading module. This is a good candidate for multi-threading since each point value is calculated independently.
+This code generates the Mandlebrot set. It uses a single thread or the threading module. This is a good candidate for multi-threading since each point value is calculated independently. There are additional scripts that use multiple processes or web services.
 
 The execution time using the threading library is about the same as using a single thread. This is probably due to the GIL and true multithreading is not currently supported in Python.
 
