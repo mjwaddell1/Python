@@ -37,7 +37,7 @@ def MandelbrotWeb(x,y,i): # generate single column
 @route('/') # GET
 def index():
     if 'quit' in request.params.keys():
-        threading.Timer(3, QuitServer).start() # kill server after 3 seconds
+        threading.Timer(1, QuitServer).start() # kill server after 1 second
         return
     dd = json.load(request.body) # x[i], y, i
     print(dd[2], end='') # column index
