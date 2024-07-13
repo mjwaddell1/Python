@@ -35,17 +35,17 @@ def MandelbrotWeb(x,y,i): # generate single column
     return points
 
 @route('/') # GET
-def index():
-    if 'quit' in request.params.keys():
+def index():  # web service only has one endpoint
+    if 'quit' in request.params.keys(): # quit signal received
         threading.Timer(1, QuitServer).start() # kill server after 1 second
         return
-    dd = json.load(request.body) # x[i], y, i
+    dd = json.load(request.body) # x[i], y, i  # input data for single column
     print(dd[2], end='') # column index
     pts = MandelbrotWeb(dd[0], dd[1], dd[2]) # get results for single column
     return template('{{data}}', data=pts) # return result array
 
 # python FractalWeb.py 8181
-if len(sys.argv) == 2:  # port number received, run as web server
+if len(sys.argv) == 2:  # port number received, start web server
     run(host='localhost', port=int(sys.argv[1])) # loop forever
     quit() # never gets here
 
