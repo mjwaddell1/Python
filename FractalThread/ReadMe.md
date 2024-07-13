@@ -13,7 +13,7 @@ Process Explorer indicates additional threads being used so it's unclear why the
 
 Using multi-process (FractalProcess.py) decreased the render time (50 vs 14 seconds) though code complexity increased. CPU utilization rose to 100% using all cores.
 
-Using multiple web services (FractalWeb.py) increased render time (20 seconds) on a single machine. The architecture allows multiple machines to be used which could significantly reduce render time. Note that a single thread is used per service instance.
+Using multiple web services (FractalWeb.py) increased render time (20 seconds) on a single machine. The architecture allows multiple machines to be used which could significantly reduce render time. Only 90% CPU usage was achieved, most likely due to web traffic overhead. Note that a single thread is used per service instance.
 
 Python version used: Python 3.11.5 | packaged by Anaconda, Inc. | (main, Sep 11 2023, 13:26:23) [MSC v.1916 64 bit (AMD64)] on win32
 
