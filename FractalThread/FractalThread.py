@@ -96,19 +96,23 @@ def MandelbrotThread(x,y,i): # generate single column
         # window.set_at((i,j), (0, (count*5) % 200, 0)) # shades of green, more contrast
         # window.set_at((i,j), (0, count/iterations*200, 0)) # shades of green, single scale
         window.set_at((i, j), colors[count-1])  # color wheel
-    pygame.display.update()  # each column
-
+   
 threads = []
 def MandelbrotSet(x, y): # use multithreading
     print('Multi Thread')
+    global threads
     ctr_start = time.perf_counter()
     for i in range(len(x)):
         t1 = threading.Thread(target=MandelbrotThread, args=(x,y,i)) # each column
         threads.append(t1)
         CheckEvents()  # check quit event
         t1.start() # threads are queued here
-    for th in threads:
-        th.join() # wait for all threads to finish
+        if i%12 == 0: # 12 cores
+           for th in threads:
+               th.join() # wait for threads to finish
+           threads=[]
+           pygame.display.update()  # 12 columns
+    pygame.display.update()  # each column
     ctr_stop = time.perf_counter()
     print('Draw Time:', ctr_stop - ctr_start) # 14 seconds
     CheckEvents()  # check quit event
