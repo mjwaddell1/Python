@@ -47,6 +47,9 @@ Various captures:
 Captures using color wheel schema:<br/>
 ![image](https://github.com/user-attachments/assets/1685fa58-1290-4726-ba1e-d5c650b4d43a)&nbsp;&nbsp;![image](https://github.com/user-attachments/assets/44fd2620-13e8-4c92-ada3-0b37a6dbec13)
 
+![image](https://github.com/user-attachments/assets/6ccde3b8-9826-4951-a8aa-39c74d97be54)&nbsp;&nbsp;![image](https://github.com/user-attachments/assets/027d2870-0d26-4832-b865-a809abcebd46)
+
+
 
 
 
