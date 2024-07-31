@@ -209,7 +209,7 @@ def DrawFractal(fract_rect): # render screen
     drawing = False
     return sfc_fractal
 
-fract_rect_start = [-2.6, -1.5, 1.5, 1.5] # intial fractal boundaries
+fract_rect_start = [-2.6, -1.5, 1.5, 1.5] # initial fractal boundaries
 sel_rect = [0, 0, 0, 0] # no selection rectangle
 sfc = DrawFractal(fract_rect_start) # initial screen
 frames = [Frame(fract_rect_start, sfc, sel_rect)] # image history for quick rendering undo\redo
