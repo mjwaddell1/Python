@@ -44,3 +44,9 @@ Render complete:
 Various captures:
 ![image](https://github.com/mjwaddell1/Python/assets/35202179/0c58ab8d-0072-4f40-a43a-30ec664af403)
 
+Captures using color wheel schema:<br/>
+![image](https://github.com/user-attachments/assets/1685fa58-1290-4726-ba1e-d5c650b4d43a)&nbsp;&nbsp;![image](https://github.com/user-attachments/assets/44fd2620-13e8-4c92-ada3-0b37a6dbec13)
+
+
+
+
