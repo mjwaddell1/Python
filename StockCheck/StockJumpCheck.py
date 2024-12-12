@@ -11,15 +11,21 @@ from urllib3.exceptions import InsecureRequestWarning
 warnings.simplefilter(action='ignore', category=Warning) # suppress requests warning
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # suppress SSL warning
 
+# import investpy
+# data = investpy.economic_calendar()
+# print(data)
+# quit()
+
+
 # --- Overview ---
 # Get stocks that have a recent jump and good earnings
 # These stocks will probably continue rising
 # Send email with stock price\earnings\options charts
 # ** Unbalanced options chart indicates bullish\bearish sentiment
 
-mbkey = 'o6eB0qL4XcBX4tHdyxxxxxxxxxxxxxxxxxxxxxOpr1HjNhkfpV5G8Kj96kg'  # https://mboum.com/api/welcome, free account
-sskey = '58f18d4b-xxxxxxxxxx-04465a30199b'  # https://github.com/yongghongg/stock-symbol
-fmpkey = 'tuTqK1dbVIxxxxxxxxxxguCKfBUyOR' # https://financialmodelingprep.com/api/v3/economic_calendar
+mbkey = 'o6eB04tHdyraC0v8WM9HxxxxxxxxxxxxOpr1HjNhkqL4XcBXfpV5Kj96kg'  # https://mboum.com/api/welcome, free account
+sskey = '58f134d4b-753e-xxxxxxxxx-04465a37199b'  # https://github.com/yongghongg/stock-symbol
+fmpkey = 'tubVIOaGDVxxxxxxxxxxxTqK1dUygOR'  # https://financialmodelingprep.com/api/v3/economic_calendar
 logtxt = ''
 
 # this script is part of an hourly task
@@ -45,6 +51,30 @@ def printx(*args):
 def rnd2(val):  # round 2 decimal places
     return str(int(val * 100) / 100.0)
 
+def GetAnalystsTarget(sym):
+  try:
+    url = 'https://www.tipranks.com/stocks/'+sym.lower()+'/forecast'
+    printx('GetAnalystsTarget', sym, url)
+    hdrs = {
+            "User-Agent": "Mozilla/5.0,(Windows NT 10.0; Win64; x64),AppleWebKit/537.36,(KHTML, like Gecko),Chrome/110.0.0.0,Safari/537.36"}
+    src = requests.get(url, headers=hdrs, verify=False).text
+    idx = src.find('There Are No Analyst Ratings')
+    if idx != -1: # no ratings for this stock
+      printx('GetAnalystsTarget - No Ratings', sym)
+      printx(url)
+      return -1
+    
+    idx = src.find('Average Price Target')
+    idx = src.find('>', idx + 30)
+    idx2 = src.find('<', idx + 1)
+    prc = src[idx + 2:idx2]
+    printx(sym, prc)
+    return float(prc)
+  except Exception as ex:
+    printx('Error: GetAnalystsTarget', sym, ex)
+    printx(url)
+    return -1
+
 def GetZacksRank(stk):
     url = ''
     rank = 0 # default error
@@ -67,7 +97,7 @@ def GetZacksRank(stk):
         return rank, 'ERROR'
 
 def GetStockNames(): # stock name\exchange, could probably just run this once, stock list rarely changes
-    print('Get Stock Names...')
+    printx('Get Stock Names...')
     # get all stock names in US
     # https://stock-symbol.herokuapp.com/api/
     url = 'https://stock-symbol.herokuapp.com/api/'
@@ -119,21 +149,24 @@ def GetEarningHistory(stks): # last 4 quarters actual\estimate
     try:
         data = {}
         for stk in stks:
-            print('.', end='', flush=True)
-            # https://mboum.com/api/v1/qu/quote/earnings/?symbol=AAPL&apikey=demo
-            url = 'https://mboum.com/api/v1/qu/quote/earnings/?symbol=' + stk + '&apikey=' + mbkey
-            rsp = requests.get(url, verify=False).json()
-            if 'error' in rsp.keys():
-                printx(f'\nGetEarningHistory {stk} - Error:{rsp["error"]}')
-                printx(url)
-                continue
-            earnings = rsp["data"]["earningsChart"]["quarterly"] # includes estimate and actual, last 4 qtrs
-            tmp = {}
-            for e in earnings:
-                qtr,yr = e['date'].split('Q')
-                tmp[yr+'Q'+qtr] = {'actual': e['actual']['raw'], 'estimate': e['estimate']['raw']}
-            keys = sorted(tmp.keys()) # 4 qtrs, latest last
-            data[stk] = [tmp[k] for k in keys]
+            try:
+                print('.', end='', flush=True)
+                # https://mboum.com/api/v1/qu/quote/earnings/?symbol=AAPL&apikey=demo
+                url = 'https://mboum.com/api/v1/qu/quote/earnings/?symbol=' + stk + '&apikey=' + mbkey
+                rsp = requests.get(url, verify=False).json()
+                if 'error' in rsp.keys():
+                    printx(f'\nGetEarningHistory {stk} - Error:{rsp["error"]}')
+                    printx(url)
+                    continue
+                earnings = rsp["data"]["earningsChart"]["quarterly"] # includes estimate and actual, last 4 qtrs
+                tmp = {}
+                for e in earnings:
+                    qtr,yr = e['date'].split('Q')
+                    tmp[yr+'Q'+qtr] = {'actual': e['actual']['raw'], 'estimate': e['estimate']['raw']}
+                keys = sorted(tmp.keys()) # 4 qtrs, latest last
+                data[stk] = [tmp[k] for k in keys]
+            except Exception as ex: # log error and skip stock
+                printx('\nGetEarningHistory', '\n', ex, '\n', url, '\n', stk)
             time.sleep(.1) # mboum has rate limit
         printx(data)
         return data
@@ -141,19 +174,23 @@ def GetEarningHistory(stks): # last 4 quarters actual\estimate
         printx('\nGetEarningHistory', '\n', ex, '\n', url, '\n', stk)
 
 def GetStockHistory(sym):  # get history from mboum, basic account
-    # 1m | 5m | 15m | 30m | 1h | 1d | 1wk | 1mo | 3mo
-    iv = '1d'  # 5 yrs data o/h/l/c
-    # url='https://mboum.com/api/v1/hi/history/?symbol=F&interval=1d&diffandsplits=true&apikey=demo'
-    url = 'https://mboum.com/api/v1/hi/history/?symbol=' + sym + '&interval=' + iv + '&diffandsplits=true&apikey=' + mbkey
-    hdrs = {
-        "User-Agent": "Mozilla/5.0,(Windows NT 10.0; Win64; x64),AppleWebKit/537.36,(KHTML, like Gecko),Chrome/110.0.0.0,Safari/537.36"}
-    jsn = requests.get(url, verify=False, headers=hdrs).json()
-    hist = []
-    for k in jsn['data'].keys():
-        hist.append((int(k), jsn['data'][k]['date'], jsn['data'][k]['open'], jsn['data'][k]['close']))
-    # sort from latest date
-    hist.sort(key=lambda x: x[0])
-    return hist
+    try:
+      # 1m | 5m | 15m | 30m | 1h | 1d | 1wk | 1mo | 3mo
+      iv = '1d'  # 5 yrs data o/h/l/c
+      # url='https://mboum.com/api/v1/hi/history/?symbol=F&interval=1d&diffandsplits=true&apikey=demo'
+      url = 'https://mboum.com/api/v1/hi/history/?symbol=' + sym + '&interval=' + iv + '&diffandsplits=true&apikey=' + mbkey
+      hdrs = {
+          "User-Agent": "Mozilla/5.0,(Windows NT 10.0; Win64; x64),AppleWebKit/537.36,(KHTML, like Gecko),Chrome/110.0.0.0,Safari/537.36"}
+      jsn = requests.get(url, verify=False, headers=hdrs).json()
+      hist = []
+      for k in jsn['data'].keys():
+          hist.append((int(k), jsn['data'][k]['date'], jsn['data'][k]['open'], jsn['data'][k]['close']))
+      # sort from latest date
+      hist.sort(key=lambda x: x[0])
+      return hist
+    except Exception as ex:
+      printx('\nGetStockHistory', '\n', ex, '\n', url, '\n', sym)
+      return None
 
 def GetExpireDates(monthcnt): # min month count [1,6], find next exp date (3rd Friday)
     datelst = [] # return list
@@ -175,7 +212,7 @@ def FloatDict(val, key=None): # fucking MBoum changed number: 'ask': {'raw': 44.
             return float(val[key])
         else:
             return float(val[list(val.keys())[0]])
-    print('Error: FloatDict: Can\'t convert', val)
+    printx('Error: FloatDict: Can\'t convert', val)
     return None
 
 # get options chain for specific symbol
@@ -272,24 +309,28 @@ def GetEconCalendar(endDate):
     return resp
 
 def AddEconEvents(): # return html table
-    print(' \n-- Economic Events --')
-    end_date = GetMarketDate(daycnt=4)[0]  # 4 market days, includes today
-    print(end_date)
-    evts = GetEconCalendar(end_date)
-    starred = list(filter(lambda e: e[0] == 1, evts)) # important events
-    starred.sort(key=lambda ee: ee[1])
-    print(starred)
-    tbl = '<br/><br/><b>Economic Events</b>\n<table>'
-    for r in starred:
-        tbl += f'\n<tr><td>{r[1]}</td><td>&nbsp;&nbsp;&nbsp;{r[2]}</td><td>&nbsp;&nbsp;&nbsp;{r[3]}</td></tr>'
-    tbl += '\n</table>'
-    return tbl
+    try:
+        print(' \n-- Economic Events --')
+        end_date = GetMarketDate(daycnt=4)[0]  # 4 market days, includes today
+        print(end_date)
+        evts = GetEconCalendar(end_date)
+        starred = list(filter(lambda e: e[0] == 1, evts)) # important events
+        starred.sort(key=lambda ee: ee[1])
+        print(starred)
+        tbl = '<br/><br/><b>Economic Events</b>\n<table>'
+        for r in starred:
+            tbl += f'\n<tr><td>{r[1]}</td><td>&nbsp;&nbsp;&nbsp;{r[2]}</td><td>&nbsp;&nbsp;&nbsp;{r[3]}</td></tr>'
+        tbl += '\n</table>'
+        return tbl
+    except Exception as ex:
+        printx('ERROR: AddEconEvents: ', ex)
+        return '<br/><br/><b>Economic Events</b>\n<table><tr><td>Economic Calendar: ERROR</td></tr></table>'
 
 def SendEmail(html, subj, images): # send email with chart images
     printx('Sending email...')
-    # Define these once; use them twice!
-    strFrom = 'michael.waddell@aon.com'
-    strTo = 'michael.waddell@aon.com'
+
+    strFrom = 'michael.waddell@xxx.com'
+    strTo = 'michael.waddell@xxx.com'
 
     # Create the root message and fill in the from, to, and subject headers
     msgRoot = MIMEMultipart('related')
@@ -448,6 +489,7 @@ def GetStockName(stk):
         return stknames[stk]
     return {'name': '-Unknown-', 'exchange': ''}
 
+# main script
 try:
     stknames = GetStockNames() # US market, all stocks
     stock_list = GetFinVizStocksTbl(','.join(filters)) # finviz filter
@@ -507,12 +549,15 @@ try:
         #                  'Pct Strike','Pct Price', True, sym+'_OptionSpread.png', (4,2))
 
     images = []
-    print('Get Stock History\\Build Charts...')
+    printx('Get Stock History\\Build Charts...')
     html = '<html><body><center>'
+    stkcnt = 0
     for stk in stock_list:
         printx(stk)
         # price line chart
-        hist = GetStockHistory(stk)[-250:] # 1 year
+        histall = GetStockHistory(stk) # full stock history
+        if not histall: continue # data error
+        hist = histall[-250:] # 1 year
         CreateChartImage(f'{stk} - {GetStockName(stk)["name"]} ({hist[-1][3]})', list(range(len(hist))), [p[3] for p in hist],
                          'Day','Close', False, stk + '.png')
         images.append(stk + '.png') # for email
@@ -528,7 +573,7 @@ try:
             images.append(stk + '_OptionSpread.png')  # for email
             html += f'<br/><img src="cid:{stk}_OptionSpread"><br/>\n'
         html += f'<br/><img src="cid:{stk}_Earnings"><br/>\n'
-        rnk = GetZackRank(stk)
+        rnk = GetZacksRank(stk)
         time.sleep(1) # in case zacks is checking
         if rnk[0] in [-1, 0, 3]: # 3 hold, 0 error
             html += f'<b><br/>Zacks Rank: {rnk[0]} {rnk[1]}<br/></b>\n'  # black
@@ -536,11 +581,23 @@ try:
             html += f'<b><br/>Zacks Rank: <font color=green>{rnk[0]} {rnk[1]}</font><br/></b>\n'
         elif rnk[0] > 3: # 4,5 strong\sell
             html += f'<b><br/>Zacks Rank: <font color=red>{rnk[0]} {rnk[1]}</font><br/></b>\n'
+        tgt = GetAnalystsTarget(stk) # target price 1 yr
+        price = stkdict[stk]['stkprice']
+        if tgt == -1:
+            html += f'<b><br/>Analysts Target: None<br/></b>\n'  # black
+        elif tgt > price:
+            pct = (tgt-price)/price * 100.0
+            html += f'<b><br/>Analysts Target: <font color=green>{tgt}&nbsp;&nbsp;&nbsp;{rnd2(pct)}%</font><br/></b>\n'
+        else:
+            pct = (tgt-price)/price * 100.0
+            html += f'<b><br/>Analysts Target: <font color=red>{tgt}&nbsp;&nbsp;&nbsp;{rnd2(pct)}%</font><br/></b>\n'
         html += f'<br/><a href="{baselink}{stk}:{GetStockName(stk)["exchange"]}" style="font-size:20px;">GoogleFinance {stk}</a><br/>\n'
-    html += AddEconEvents()
+        stkcnt += 1
+#    html += AddEconEvents()  # no longer works
     html += '</center></body></html>'
     printx(html)
-    SendEmail(html,f'Stock Jump Alert ({len(stock_list)})', images)
+    if len(stock_list):
+      SendEmail(html,f'Stock Jump Alert ({len(stkcnt)})', images)
 except Exception as ex:
     printx(str(ex))
     html = f'<html><body><b>{str(ex)}</b></body></html>'
