@@ -597,7 +597,7 @@ try:
     html += '</center></body></html>'
     printx(html)
     if len(stock_list):
-      SendEmail(html,f'Stock Jump Alert ({len(stkcnt)})', images)
+      SendEmail(html,f'Stock Jump Alert ({stkcnt})', images)
 except Exception as ex:
     printx(str(ex))
     html = f'<html><body><b>{str(ex)}</b></body></html>'
