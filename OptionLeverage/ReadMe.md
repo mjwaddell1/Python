@@ -11,7 +11,7 @@ Note - If your data source does not provide delta, you can calculate leverage us
 <code>Leverage = OptionChgPct/StockChgPct</code>
 
 If an option leverage is 10 and the stock price rises 1%, the option price with rise 10%.  
-Be aware the leverage also applies to price drops: Stock (-1%) &rarr; Option (-10%)
+Be aware the leverage also applies to price drops: Stock (-1%) &#10132; Option (-10%)
 
 Option data is retrieved from MBoum:  
 https://docs.mboum.com/#stocks-options-small-stylecolor-f8f2f2background-fa256fpadding-1px-4pxborder-radius-3pxhotsmall-GETapi-v3-markets-options
@@ -22,6 +22,7 @@ https://finnhub.io/docs/api/quote
 Example run for IBM:
 <pre>
 C:\Python>python StockOptionLeverage.py IBM
+  
 Stock Option Leverage - IBM 2025-07-28 20:05:51.560632
   
 getOptionExps IBM
