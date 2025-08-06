@@ -77,7 +77,7 @@ def processOptions(stk):
         allOpts.extend(opts)
     stkPrice = GetStockPrice(stk)
     printx('\n>>>>', stk)
-    printx('Leverage   ExpDate     Strike   Price')
+    printx('Leverage   ExpDate     Delta  Strike   Price')
     for opt in allOpts:
         lvg = (opt['delta']/opt['price'])/(1/stkPrice)
         opt['leverage'] = lvg
@@ -87,6 +87,7 @@ def processOptions(stk):
         printx(
             str("%.2f" % opt['leverage']).rjust(8),'',
             str(opt['exp']),
+            str("%.2f" % opt['delta']).rjust(6),
             str("%.2f" % opt['strike']).rjust(8),
             str("%.2f" % opt['price']).rjust(7),
             isMaxExp)
