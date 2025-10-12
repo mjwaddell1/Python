@@ -1,6 +1,6 @@
 This script retrieves monthly call options for the stock ticker given at the command line. It then calculates the option leverage based on the option delta and current stock and option prices. The Str% column is the strike price (percentage) relative to the stock price. Output is sorted by leverage descending.
 
-The script highlights (*) the longest options (leaps) for long term investment.
+The script highlights (*) the longest options (leaps) for long term investment. Add * as the second argument to show longest options only.
 
 Delta is the option price change for a $1 change in stock price.
 
