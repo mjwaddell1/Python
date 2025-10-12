@@ -9,8 +9,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # suppress S
 # --- Overview ---
 # Get options for stock and show leverage for each option
 
-token = 'cl1uje1r01qXXXXXXXXXXXXXe1r01qinfqo7eig'  # finhub free account for stock price
-mbkey = '12ZAozwUlyRXXXXXXXXXX0bVizhI249OZPTG'  # https://mboum.com/api/welcome, free account
+token = 'cl1uje1r01qXXXXXXXXXXXXXe1r01qinfqo8eig'  # finhub free account for stock price
+mbkey = '12ZAozwUlyRXXXXXXXXXX0bVizhI259OZPTG'  # https://mboum.com/api/welcome, free account
 StockSymbol = ''
 logtxt = ''
 
@@ -66,7 +66,7 @@ def getOptions(stk, exp):
         })
     return opts
 
-def processOptions(stk):
+def processOptions(stk, maxExpOnly):
     exps = getOptionExps(stk) # get exp list for stock
     printx('\n')
     allOpts = []
@@ -84,6 +84,8 @@ def processOptions(stk):
     allOpts.sort(key=lambda o:o['leverage'], reverse=True)
     for opt in allOpts:
         isMaxExp = '*' if opt['exp'] == maxExp else ' '
+        if opt['exp'] != maxExp and maxExpOnly:
+            continue # skip non-max options
         printx(
             str("%.2f" % opt['leverage']).rjust(8),'',
             str(opt['exp']),
@@ -96,6 +98,9 @@ def processOptions(stk):
 if len(sys.argv) > 1:
     StockSymbol = sys.argv[1].upper()
     printx('\nStock Option Leverage -', StockSymbol, datetime.now(), '\n')  # current date\time
-    processOptions(StockSymbol)
+    maxExpOnly = False
+    if len(sys.argv) > 2 and sys.argv[2] == '*':
+        maxExpOnly = True
+    processOptions(StockSymbol, maxExpOnly)
 else:
     print('Missing stock symbol argument: python StockOptionLeverage.py NVDA')
