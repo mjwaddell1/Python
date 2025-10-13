@@ -477,12 +477,26 @@ def CalcOptionRatio(stk, xpct, y, pct): # call/put price at pct point
         return 0
 
 
-filters = [  # finviz, initial filter for stocks
+filters = [  # finviz, initial filter for stocks, not used
     'ta_highlow52w_nh',  # 52 week high
     'ta_sma20_pa10',     # price 10% above SMA 20 day
     'fa_netmargin_pos',  # positive net profit margin
     'fa_epsyoy_pos'      # earnings rise yr/yr
 ]
+
+def GetStockList():
+    # use multiple filters, merge lists
+    filters = ['ta_highlow52w_nh,ta_sma20_pa10,fa_netmargin_pos,fa_epsyoy_pos', # 52w high, price 10% over sma20, pos margin, rising earnings (y/y)
+    'fa_epsqoq_pos,fa_epsyoy_pos,fa_netmargin_pos,ta_sma20_sa50,ta_sma50_pa20'] # rising earnings (q/q y/y), pos margin, sma20 > sma50, price 20% sma 50
+    allStks = []
+    syms = [] # for dup check
+    for f in filters:
+        stks = GetFinVizStocksTbl(f) # single filter
+        for stk in stks:
+            if stk[0] not in syms: # prevent repeats
+                syms.append(stk[0])
+                allStks.append(stk)
+    return allStks # combined list
 
 def GetStockName(stk):
     if stk in stknames:
@@ -492,7 +506,8 @@ def GetStockName(stk):
 # main script
 try:
     stknames = GetStockNames() # US market, all stocks
-    stock_list = GetFinVizStocksTbl(','.join(filters)) # finviz filter
+    # stock_list = GetFinVizStocksTbl(','.join(filters)) # finviz filter
+    stock_list = GetStockList()
     if not len(stock_list):
         printx('No stocks from FinViz') # no recent jumps
         quit()
