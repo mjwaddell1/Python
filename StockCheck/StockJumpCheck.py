@@ -493,9 +493,10 @@ def GetStockList():
     for f in filters:
         stks = GetFinVizStocksTbl(f) # single filter
         for stk in stks:
-            if stk[0] not in syms: # prevent repeats
-                syms.append(stk[0])
+            if stk['Ticker'] not in syms: # prevent repeats
+                syms.append(stk['Ticker'])
                 allStks.append(stk)
+    allStks.sort(key=lambda s: s['Ticker']) # sort by stock symbol
     return allStks # combined list
 
 def GetStockName(stk):
