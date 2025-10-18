@@ -1,5 +1,7 @@
 Stock Bottom Check just scans a set list of stocks for a low price and sends an alert (email).
 
+Stock Retrace Check searches for stocks that have recently peaked on high volume, then retraced below the EMA 50 line on lower volume.
+
 For Stock Jump Check and Stock Option Check, stocks are filter based on price or option trends. An email is sent with the filtered stocks. The Stock Jump Check includes the economic calendar.
 
 The earnings chart shows the last 4 quarters of earnings reports (actual\estimated earnings).
