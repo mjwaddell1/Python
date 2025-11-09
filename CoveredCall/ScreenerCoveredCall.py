@@ -11,7 +11,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Screener to search stock options for good covered call opportunities
 
-optlogtxt = ""
+optLogTxt = ""
 
 # get all stock names in US
 key = '58f18e4b-XXXXXXX-04465a30299b'  # https://github.com/yongghongg/stock-symbol
@@ -22,7 +22,7 @@ StockInfo = requests.get(url + 'symbols', params=params, headers=headers, verify
 with open('C:/Mike/StockList.json', 'w') as f:
     f.write(str(StockInfo))
 
-mbkey = 'yOA0bpDlcMjngTVrXXXXXXXXXXXXTPfLLRayeWK4UGGfTVJn'  # https://mboum.com/api/welcome, free account
+mbKey = 'yOA0bpDlcMjngTVrXXXXXXXXXXXXTPfLLRayeWK4UGGfTVJn'  # https://mboum.com/api/welcome, free account
 
 
 #  FinViz scraper functions
@@ -81,7 +81,7 @@ def GetRowData(row):  # parse single data row
 
 def GetFinVizStocksTbl(filters=None):  # scrape main table
     if not filters:
-        filters = 'sh_opt_option,sh_price_o50,ta_volatility_mo3'  # default
+        filters = 'sh_avgvol_o500,sh_opt_option,sh_price_o10,ta_perf_1wup,ta_sma20_pa,ta_sma50_pa,targetprice_above'  # default
 
     hdr = {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) "
@@ -139,32 +139,32 @@ def DaysToExp(dy=4, start=0):  # days til Friday (4) (Thur if Friday holiday)
             return d
 
 
-def printx(*arg):  # print to screen and final log string
-    global optlogtxt
+def PrintX(*arg):  # print to screen and final log string
+    global optLogTxt
     print(*arg)  # print to screen
-    optlogtxt += " ".join(str(x) for x in arg) + "\n"  # write to log file at end of script
+    optLogTxt += " ".join(str(x) for x in arg) + "\n"  # write to log file at end of script
 
 
-def GetEarningsDay(sym, maxdays):  # future earnings dates (days from today)
+def GetEarningsDay(sym, maxDays):  # future earnings dates (days from today)
     try:
         url = 'https://www.clicktocontinue.com/getwebdata.asp?https://ab.tradeui.com/api/earnings.php?symbol=' + sym
         #  [{"symbol":"AMZN","earning_time":"2","earning_date":"2023-08-03","MarketCap":"1406750000000","optionable":"1","last_updated":"2023-07-24 19:20:29"}]
         rsp = requests.get(url, verify=False).json()
         dt = rsp[0]['earning_date']  # next (or most recent) earnings date
         diff = (datetime.fromisoformat(dt) - datetime.now()).days + 1  # days
-        if (0 <= diff < maxdays):  # future earnings call within range, include today
+        if (0 <= diff < maxDays):  # future earnings call within range, include today
             return (diff, '')  # actual number of days to earnings call
         return (-1, '0')  # no dates in range
     except Exception as ex:
-        printx(sym, 'Earnings error:', ex)
+        PrintX(sym, 'Earnings error:', ex)
         return (-2, 'x')  # error
 
 
-def GetEarningsDayYahoo(sym, maxdays):  # future earnings dates (days from today)
+def GetEarningsDayYahoo(sym, maxDays):  # future earnings dates (days from today)
     try:
         dt = str(yf.Ticker(sym).calendar.iloc[0][0])  # next earnings date
         diff = (datetime.fromisoformat(dt.split(' ')[0]) - datetime.now()).days + 1  # days
-        if (0 <= diff < maxdays):  # future earnings call within range, include today
+        if (0 <= diff < maxDays):  # future earnings call within range, include today
             return (diff, '')  # actual number of days to earnings call
         return (-1, '0')  # no dates in range
     except Exception as ex:
@@ -179,8 +179,7 @@ def GetCompanyName(sym):  # look up company name from symbol
     else:
         return '<unknown>'  # symbol not found
 
-
-def pct(val, digits=1):  # format percent
+def Pct(val, digits=1):  # format percent
     val *= 10 ** (digits + 2)
     return '{1:.{0}f}%'.format(digits, floor(val) / 10 ** digits)
 
@@ -228,7 +227,7 @@ not_used = [  # save for later
 def GetCallOptionsMB(stk):  # MBoum {s['Ticker'], s['Price'], s['Change']}
     retry = 0
     url = ''
-    stkprice = 0
+    stkPrice = 0
     sym = ''
     while retry < 3:  # if request fails
         retry += 1
@@ -236,19 +235,19 @@ def GetCallOptionsMB(stk):  # MBoum {s['Ticker'], s['Price'], s['Change']}
         try:
             # https://mboum.com/api/v1/op/option/?symbol=AAPL&expiration=1674172800&apikey=demo
             sym = stk['Ticker']
-            stkprice = 0
-            yfprice = (yf.Ticker(sym)).history(period="3m").iloc[-1]['Close']
-            expdate = str(int(datetime.combine(GetFridayDate(), datetime.min.time()).replace(
+            stkPrice = 0
+            yfPrice = (yf.Ticker(sym)).history(period="3m").iloc[-1]['Close']
+            expDate = str(int(datetime.combine(GetFridayDate(), datetime.min.time()).replace(
                 tzinfo=timezone.utc).timestamp()))  # epoch #GetThursdayDate()
             urllib3.disable_warnings(category=InsecureRequestWarning)
-            stkprice = yfprice
+            stkPrice = yfPrice
             # get option list
             url = 'https://mboum.com/api/v1/op/option/?symbol=' + stk[
-                'Ticker'] + '&expiration=' + expdate + '&apikey=' + mbkey
+                'Ticker'] + '&expiration=' + expDate + '&apikey=' + mbKey
             hdrs = {
                 "User-Agent": "Mozilla/5.0,(Windows NT 10.0; Win64; x64),AppleWebKit/537.36,(KHTML, like Gecko),Chrome/110.0.0.0,Safari/537.36"}
             rsp = requests.get(url, verify=False, headers=hdrs).json()  # all call options for this symbol
-            stkprice = rsp['data']['optionChain']['result'][0]['quote']['regularMarketPrice']  # realtime
+            stkPrice = rsp['data']['optionChain']['result'][0]['quote']['regularMarketPrice']  # realtime
             data = []
             # get option details
             for cll in rsp['data']['optionChain']['result'][0]['options'][0]['calls']:
@@ -261,7 +260,7 @@ def GetCallOptionsMB(stk):  # MBoum {s['Ticker'], s['Price'], s['Change']}
                     'ask': float(cll['ask']),
                 })
             print('.', end='')
-            return {'sym': sym, 'price': stkprice, 'yprice': stk['Price'], 'ychange': stk['Change'], 'yfprice': yfprice,
+            return {'sym': sym, 'price': stkPrice, 'yprice': stk['Price'], 'ychange': stk['Change'], 'yfPrice': yfPrice,
                     'calls': data, 'error': ''}  # include yahoo price\change
         except Exception as ex:
             if "request limit" in str(rsp):  # error: Sorry, you are hitting the request limit of 5 per second
@@ -270,7 +269,7 @@ def GetCallOptionsMB(stk):  # MBoum {s['Ticker'], s['Price'], s['Change']}
                 retry = 0
             if (retry == 2):
                 print("*** error: ", sym, ex, rsp, '\n', url)
-                return {'sym': sym, 'price': stkprice, 'yprice': stk['Price'], 'ychange': stk['Change'], 'yfprice': -1,
+                return {'sym': sym, 'price': stkPrice, 'yprice': stk['Price'], 'ychange': stk['Change'], 'yfPrice': -1,
                         'calls': None, 'error': ex}
 
 def GetTickerOptionsMB(stks):  # MBoum - stks is [{s['Ticker'], s['Price'], s['Change']},,,,]
@@ -278,38 +277,38 @@ def GetTickerOptionsMB(stks):  # MBoum - stks is [{s['Ticker'], s['Price'], s['C
     results = pool.map(GetCallOptionsMB, stks)
     return results
 
-def UpdateStockQuotes(stkdata):  # get real-time quotes MBoum
+def UpdateStockQuotes(stkData):  # get real-time quotes MBoum
     rsp = ''
     url = ''
     try:
-        print('\nUpdateStockQuotes', len(stkdata))
+        print('\nUpdateStockQuotes', len(stkData))
         quotes = {}  # dictionary  symbol:price
-        urlbase = url = 'https://mboum.com/api/v1/qu/quote/?apikey=' + mbkey + '&symbol='
+        urlbase = url = 'https://mboum.com/api/v1/qu/quote/?apikey=' + mbKey + '&symbol='
         ctr = 0
-        for sd in stkdata:
+        for sd in stkData:
             url += sd['sym'] + ','
             ctr += 1
             # 50 symbols/request for free version, 200 paid version
-            if ctr % 200 == 0 or ctr == len(stkdata):  # 5 requests per second
+            if ctr % 200 == 0 or ctr == len(stkData):  # 5 requests per second
                 url = url[:-1]  # remove last comma, fucking MBoum
                 hdrs = {
                     "User-Agent": "Mozilla/5.0,(Windows NT 10.0; Win64; x64),AppleWebKit/537.36,(KHTML, like Gecko),Chrome/110.0.0.0,Safari/537.36"}
                 rsp = requests.get(url, verify=False, headers=hdrs).json()  # send request
                 print(ctr, end='  ')
                 for rec in rsp['data']:
-                    earndate = ''
+                    earnDate = ''
                     # dt = datetime.datetime.fromtimestamp(0)
-                    # if rec['earningsTimestamp']: earndate=rec['earningsTimestamp']  #earndate=rec['earningsTimestamp']['date']
+                    # if rec['earningsTimestamp']: earnDate=rec['earningsTimestamp']  #earnDate=rec['earningsTimestamp']['date']
                     quotes[rec['symbol']] = {'price': rec['regularMarketPrice'], 'chg': rec['regularMarketChange'],
-                                             'chgpct': rec['regularMarketChangePercent'], 'earndate': earndate}
+                                             'chgpct': rec['regularMarketChangePercent'], 'earnDate': earnDate}
                 url = urlbase
                 sleep(0.5)  # max 5 requests per second
         rsp = url = None
-        for sd in stkdata:
+        for sd in stkData:
             sd['price'] = quotes[sd['sym']]['price']  # overwrite finviz price
             sd['chg'] = quotes[sd['sym']]['chg']  # new field, not post market price
             sd['chgpct'] = quotes[sd['sym']]['chgpct']  # new field
-            sd['earndate'] = quotes[sd['sym']]['earndate']  # new field, recent earndate may be in past
+            sd['earnDate'] = quotes[sd['sym']]['earnDate']  # new field, recent earnDate may be in past
         print('\nDone quote update')
     except Exception as ex:  # error processing data
         print("quote error:", ex)
@@ -320,25 +319,25 @@ def UpdateStockQuotes(stkdata):  # get real-time quotes MBoum
 if __name__ == '__main__':
     freeze_support()  # needed for Windows
 
-    optlogfile = "C:/Mike/OptionCoveredCallHistory.txt"  # store option results (append)
-    optlogtxt = ""  # store option results
+    optLogFile = "D:/MikeStuff/OptionCoveredCallHistory.txt"  # store option results (append)
+    optLogTxt = ""  # store option results
 
-    printx('\nCovered Call Screener -', datetime.now(), '\n')  # current date\time
+    PrintX('\nCovered Call Screener -', datetime.now(), '\n')  # current date\time
 
-    expdate = GetFridayDate(14)  # str(GetThursdayDate())
-    expts = datetime.combine(expdate, datetime.min.time()).replace(tzinfo=timezone.utc).timestamp()
+    expDate = GetFridayDate(14)  # str(GetThursdayDate())
+    expTS = datetime.combine(expDate, datetime.min.time()).replace(tzinfo=timezone.utc).timestamp()
 
     daysToExp = DaysToExp(4, 14) # Friday, 2 weeks
 
     #  print(GetHitRate('TSLA',0.03))
     #  quit()
 
-    printx('Exp Date:', str(expdate), '   (' + str(int(expts)) + ')')
-    printx('Run FinViz screener...')
+    PrintX('Exp Date:', str(expDate), '   (' + str(int(expTS)) + ')')
+    PrintX('Run FinViz screener...')
 
-    stock_list = GetFinVizStocksTbl(','.join(filters))
+    stockList = GetFinVizStocksTbl(','.join(filters))
 
-    printx('\n', len(stock_list), 'Stocks found (FinViz)\n')  # stock count from finviz filter
+    PrintX('\n', len(stockList), 'Stocks found (FinViz)\n')  # stock count from finviz filter
 
     # update these values to change option scan filter
     MinReturn = 1.0 / 100  # 2% minimum return
@@ -351,18 +350,18 @@ if __name__ == '__main__':
                  'GUSH', 'LABU', 'LABD', 'BOIL', 'SOXS', 'KOLD',
                  'DPST']  # skip leveraged indexes, very volatile, high risk
 
-    stks = [{'Ticker': s['Ticker'], 'Price': s['Price'], 'Change': s['ChangePct']} for s in stock_list]  # symbol, price, change only
+    stks = [{'Ticker': s['Ticker'], 'Price': s['Price'], 'Change': s['ChangePct']} for s in stockList]  # symbol, price, change only
 
     stks = list(filter(lambda s: s['Ticker'] not in IgnoreStk, stks))  # remove ignored
 
-    printx('Get Option Chains (MBoum)....')
+    PrintX('Get Option Chains (MBoum)....')
 
-    stkdata = GetTickerOptionsMB(stks)  # all option data for all stocks
+    stkData = GetTickerOptionsMB(stks)  # all option data for all stocks
 
     # update stock data with real-time quotes (MBoum)
-    UpdateStockQuotes(stkdata)
+    UpdateStockQuotes(stkData)
 
-    stksrt = sorted(stkdata, key=lambda d: d['sym'])  # sort by ticker symbol
+    stkSrt = sorted(stkData, key=lambda d: d['sym'])  # sort by ticker symbol
 
     print()
     print('  Table info:')
@@ -375,23 +374,23 @@ if __name__ == '__main__':
     print('     MaxLoss = Stock Price - Call Bid')
     print('  Before submit, confirm % return (OptionPrice/StockPrice)')
 
-    printx('\n\nProcess Option Chains....')
-    printx('[Symbol Price Change (EarnDay) Name]')
-    printx('   [StrikeSell Bid %Profit]\n')
+    PrintX('\n\nProcess Option Chains....')
+    PrintX('[Symbol Price Change (EarnDay) Name]')
+    PrintX('   [StrikeSell Bid %Profit]\n')
 
     # For each stock from FinViz, get call option chain
     # Goal is to find call options where CallPrice/StockPrice > 5%
     #    Expiry must be under 5 days (weekly).
     skip = False  # used for earnings check
-    for trycnt in [1]:  # if options error, retry failed stocks
-        stkretry = []  # error stocks
-        for stk in stksrt:  # each stock from MB
+    for tryCnt in [1]:  # if options error, retry failed stocks
+        stkRetry = []  # error stocks
+        for stk in stkSrt:  # each stock from MB
             try:
                 disp = False  # don't show stock unless option found
                 pr = float(stk['price'])  # stock price
-                stkcalls = stk['calls']  # list of strike\bid\ask
-                if not stkcalls: continue  # error, no options for this stock
-                for cll in stkcalls:  # for each call option in option list
+                stkCalls = stk['calls']  # list of strike\bid\ask
+                if not stkCalls: continue  # error, no options for this stock
+                for cll in stkCalls:  # for each call option in option list
                     if skip: break  # failed earnings check, move to next stock
                     strike = cll['strike']  # option strike price
 
@@ -399,31 +398,31 @@ if __name__ == '__main__':
                             and cll['bid'] > MinPremium  # premium > 50 cents
                             and cll['bid']/pr > MinReturn):  # min 2% profit
                         if not disp:  # first option for this stock
-                            earndays, msg = GetEarningsDay(stk['sym'], 10)  # days until earnings call
-                            if earndays >= 0 and earndays < daysToExp:
-                                printx('Skipping earnings stock:', stk['sym'], '(' + str(earndays) + ')')
+                            earnDays, msg = GetEarningsDay(stk['sym'], 10)  # days until earnings call
+                            if earnDays >= 0 and earnDays < daysToExp:
+                                PrintX('Skipping earnings stock:', stk['sym'], '(' + str(earnDays) + ')')
                                 skip = True  # stop checking options, move to next stock
                                 break
                             # print stock data once
                             name = GetCompanyName(stk['sym'])  # yf.Ticker(stk['sym']).info['shortName']
-                            printx('++',
+                            PrintX('++',
                                    stk['sym'].ljust(6),
                                    str("%.1f" % pr).rjust(7),
-                                   str(pct(stk['chgpct'] / 100)).rjust(7),
-                                   '(' + ('-' if earndays < 0 else (msg + str(earndays))) + ')',
+                                   str(Pct(stk['chgpct'] / 100)).rjust(7),
+                                   '(' + ('-' if earnDays < 0 else (msg + str(earnDays))) + ')',
                                    '  ',
                                    name)  # GetCompanyName(stk['Ticker']))
                             disp = True  # stock already displayed
                             # print option data
-                        printx('>>> ',
+                        PrintX('>>> ',
                                str(cll['strike']).rjust(8),
                                str("%.1f" % cll['bid']).rjust(8),
-                               pct(cll['bid'] / pr).rjust(8))
+                               Pct(cll['bid'] / pr).rjust(8))
                         skip = False  # reset flag
             except Exception as ex:  # error processing data
-                printx(stk['sym'], 'Error:', ex)  # print error, move to next stock
+                PrintX(stk['sym'], 'Error:', ex)  # print error, move to next stock
 
-    printx('\n -- Done --\n')
+    PrintX('\n -- Done --\n')
 
-    with open(optlogfile, 'a') as f:
-        f.write(optlogtxt)  # write final log to log file
+    with open(optLogFile, 'a') as f:
+        f.write(optLogTxt)  # write final log to log file
