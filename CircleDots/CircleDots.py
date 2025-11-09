@@ -14,14 +14,14 @@ class Neighbor: # easier syntax
         self.pos, self.neg = pos, neg
 
 radius = 200 # target distance dot to center
-dotspeed = 0.1 # max pixel movement per step
-dot_speed_rad = 2 * math.pi * dotspeed / (2 * math.pi * radius) # max radian movement per step
-dot_cnt = 50 # dot count
-tracerdots = []  #[0,1,2] # highlight dots for tracking
+dotSpeed = 0.1 # max pixel movement per step
+dotSpeedRad = 2 * math.pi * dotSpeed / (2 * math.pi * radius) # max radian movement per step
+dotCnt = 50 # dot count
+tracerDots = []  #[0,1,2] # highlight dots for tracking
 
-scr_width = 1000
-scr_height = 700
-window = pygame.display.set_mode((scr_width, scr_height))
+scrWidth = 1000
+scrHeight = 700
+window = pygame.display.set_mode((scrWidth, scrHeight))
 pygame.display.set_caption("Dot Circle")
 
 class Dot:
@@ -29,15 +29,15 @@ class Dot:
         self.index = index
         # x, y used when calculating new position of neighbors
         # newx, newy is new position after calculation
-        self.x = self.newx = x
-        self.y = self.newy = y
-        self.on_circle = False # true when dot at correct radius
+        self.x = self.newX = x
+        self.y = self.newY = y
+        self.onCircle = False # true when dot at correct radius
 
     def Draw(self, color=(200, 100, 0)): # default orange
-        pygame.draw.circle(window, color, (self.newx, self.newy), 2)
+        pygame.draw.circle(window, color, (self.newX, self.newY), 2)
         # update position for next cycle
-        self.x = self.newx
-        self.y = self.newy
+        self.x = self.newX
+        self.y = self.newY
 
     def CenterDist(self): # dot distance from center
         return (sqrt((center.x - self.x) ** 2 + (center.y - self.y) ** 2))
@@ -53,55 +53,55 @@ class Dot:
         # right triangle, just magnify/shrink
         ratio = dist/self.CenterDist() # hypotenuse
         # update draw position, keep x,y for neighbor calcs
-        self.newx = center.x + (self.x - center.x) * (1 + ratio)
-        self.newy = center.y + (self.y - center.y) * (1 + ratio)
+        self.newX = center.x + (self.x - center.x) * (1 + ratio)
+        self.newY = center.y + (self.y - center.y) * (1 + ratio)
 
     def MoveDegrees(self, degs): # move around circle
-        newdeg = self.Degrees() + degs
+        newDeg = self.Degrees() + degs
         # check if crossed 0 angle
-        if newdeg > 2 * math.pi:
-            newdeg -= 2 * math.pi
-        if newdeg < 0:
-            newdeg += 2 * math.pi
+        if newDeg > 2 * math.pi:
+            newDeg -= 2 * math.pi
+        if newDeg < 0:
+            newDeg += 2 * math.pi
         # degrees relative to center
         # keep x,y for neighbor calcs
-        self.newx = radius * math.cos(newdeg) + center.x
-        self.newy = radius * math.sin(newdeg) + center.y
+        self.newX = radius * math.cos(newDeg) + center.x
+        self.newY = radius * math.sin(newDeg) + center.y
 
     def GetNeighbors(self): # get closest neighbor each side
-        min_neg = 100
-        min_pos = 100
-        neighbor_neg = None
-        neighbor_pos = None
-        deg_diff_pos = deg_diff_neg = 0
+        minNeg = 100
+        minPos = 100
+        neighborNeg = None
+        neighborPos = None
+        degDiffPos = degDiffNeg = 0
         # scan all dots for closest neighbors
         for dot in dots:
-            if dot.index != self.index and dot.on_circle: # ignore dots not at circle edge
-                other_deg = dot.Degrees()
-                self_deg = self.Degrees()
-                if other_deg == self_deg: # prevent div/0
-                    self_deg += 0.0001
+            if dot.index != self.index and dot.onCircle: # ignore dots not at circle edge
+                otherDeg = dot.Degrees()
+                selfDeg = self.Degrees()
+                if otherDeg == selfDeg: # prevent div/0
+                    selfDeg += 0.0001
                 # for each dot, calc angle on both sides
-                if other_deg > self_deg:
-                    deg_diff_pos = other_deg - self_deg
-                    deg_diff_neg = 2*math.pi - deg_diff_pos
-                if other_deg < self_deg:
-                    deg_diff_neg = self_deg - other_deg
-                    deg_diff_pos = 2*math.pi - deg_diff_neg
+                if otherDeg > selfDeg:
+                    degDiffPos = otherDeg - selfDeg
+                    degDiffNeg = 2*math.pi - degDiffPos
+                if otherDeg < selfDeg:
+                    degDiffNeg = selfDeg - otherDeg
+                    degDiffPos = 2*math.pi - degDiffNeg
                 # check if closest
-                if deg_diff_pos < min_pos:
-                    min_pos = deg_diff_pos
-                    neighbor_pos = dot # closest neighbor with larger angle
-                if deg_diff_neg < min_neg:
-                    min_neg = deg_diff_neg
-                    neighbor_neg = dot # closest neighbor with smaller angle
-        return Neighbor(neighbor_pos, neighbor_neg)
+                if degDiffPos < minPos:
+                    minPos = degDiffPos
+                    neighborPos = dot # closest neighbor with larger angle
+                if degDiffNeg < minNeg:
+                    minNeg = degDiffNeg
+                    neighborNeg = dot # closest neighbor with smaller angle
+        return Neighbor(neighborPos, neighborNeg)
 
 pygame.font.init() # only needed once
 def WriteText(): # instructions
-    my_font = pygame.font.SysFont('Arial', 12)
-    text_surface = my_font.render('Pause:<Space>  Quit:<Esc>  Move Center:<LeftClick>', False, (200, 200, 200))
-    window.blit(text_surface, (10, scr_height - 20))
+    font = pygame.font.SysFont('Arial', 12)
+    textSurface = font.render('Pause:<Space>  Quit:<Esc>  Move Center:<LeftClick>', False, (200, 200, 200))
+    window.blit(textSurface, (10, scrHeight - 20))
 
 def CheckEvents(): # check if user clicked key/mouse
     global paused, center
@@ -119,52 +119,52 @@ def CheckEvents(): # check if user clicked key/mouse
 
 # initialize random dots
 dots = []
-for i in range(dot_cnt):
-    dots.append(Dot(randint(0, scr_width), randint(0, scr_height), i)) # random dot position
+for i in range(dotCnt):
+    dots.append(Dot(randint(0, scrWidth), randint(0, scrHeight), i)) # random dot position
 
 paused = False
 while True: # run until escape pressed
     CheckEvents() # mouse/escape/space
     if paused: continue
-    for i in range(dot_cnt):
-        move_dist = round(radius - dots[i].CenterDist(), 5) # move to circle edge
-        if move_dist < 0: # move dot in
-            dots[i].MoveTowardCenter(-min(-move_dist, dotspeed))
-        elif move_dist > 0: # move dot out
-            dots[i].MoveTowardCenter(min(move_dist, dotspeed))
+    for i in range(dotCnt):
+        moveDist = round(radius - dots[i].CenterDist(), 5) # move to circle edge
+        if moveDist < 0: # move dot in
+            dots[i].MoveTowardCenter(-min(-moveDist, dotSpeed))
+        elif moveDist > 0: # move dot out
+            dots[i].MoveTowardCenter(min(moveDist, dotSpeed))
         else: # spread around circle
-            dots[i].on_circle = True # at correct radius, now space out around circle
-            dot_deg = dots[i].Degrees()
-            if dot_deg < 0.001: # prevent overflow at 0
+            dots[i].onCircle = True # at correct radius, now space out around circle
+            dotDeg = dots[i].Degrees()
+            if dotDeg < 0.001: # prevent overflow at 0
                 pass
             neighbors = dots[i].GetNeighbors() # closest dots high\low
             if not (neighbors.pos or neighbors.neg): # only one dot on circle
                 continue
-            deg_high = neighbors.pos.Degrees() # positive side
-            deg_low = neighbors.neg.Degrees() # negative side
-            deg_diff = deg_high - deg_low # degree gap between neighbors
-            mid_deg = deg_low + deg_diff / 2.0 # midpoint degrees between neighbors
-            if deg_diff < 0: # negative degrees
-                mid_deg += math.pi # make degrees positive
-            if mid_deg > 2*math.pi: # past entire circle (over 360 degrees)
-                mid_deg -= 2*math.pi # shift down
+            degHigh = neighbors.pos.Degrees() # positive side
+            degLow = neighbors.neg.Degrees() # negative side
+            degDiff = degHigh - degLow # degree gap between neighbors
+            midDeg = degLow + degDiff / 2.0 # midpoint degrees between neighbors
+            if degDiff < 0: # negative degrees
+                midDeg += math.pi # make degrees positive
+            if midDeg > 2*math.pi: # past entire circle (over 360 degrees)
+                midDeg -= 2 * math.pi # shift down
 
-            mid_deg_diff = mid_deg - dot_deg # degree distance from dot
-            if abs(mid_deg_diff) > math.pi: # neighbors crossed 0 angle, goal angle is opposite side of 0
-                if dot_deg < mid_deg: # other side of 0 angle
-                    mid_deg_diff = -(dot_deg + 2 * math.pi - mid_deg) # add gaps above/below zero
-                if mid_deg < deg_high: # other side of 0 angle
-                    mid_deg_diff = mid_deg + 2 * math.pi - dot_deg # add gaps below/above zero
+            midDegDiff = midDeg - dotDeg # degree distance from dot
+            if abs(midDegDiff) > math.pi: # neighbors crossed 0 angle, goal angle is opposite side of 0
+                if dotDeg < midDeg: # other side of 0 angle
+                    midDegDiff = -(dotDeg + 2 * math.pi - midDeg) # add gaps above/below zero
+                if midDeg < degHigh: # other side of 0 angle
+                    midDegDiff = midDeg + 2 * math.pi - dotDeg # add gaps below/above zero
 
-            if mid_deg_diff > 0: # move dot clockwise
-                dots[i].MoveDegrees(min(mid_deg_diff, dot_speed_rad))
-            if mid_deg_diff < 0: # move dot counterclockwise
-                dots[i].MoveDegrees(max(mid_deg_diff, -dot_speed_rad))
+            if midDegDiff > 0: # move dot clockwise
+                dots[i].MoveDegrees(min(midDegDiff, dotSpeedRad))
+            if midDegDiff < 0: # move dot counterclockwise
+                dots[i].MoveDegrees(max(midDegDiff, -dotSpeedRad))
 
     window.fill((0, 0, 0)) # clear screen
     WriteText()
-    for i in range(dot_cnt): # move dots
-        if i in tracerdots:
+    for i in range(dotCnt): # move dots
+        if i in tracerDots:
             dots[i].Draw((255,200,200)) # white, highlight dots for tracking
         else:
             dots[i].Draw() # orange
