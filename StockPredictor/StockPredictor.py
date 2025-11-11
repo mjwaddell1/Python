@@ -47,7 +47,7 @@ from torch.utils.data import DataLoader
 
 # https://financialmodelingprep.com/api/v3/historical-price-full/HBAN?apikey=tuTqK1dbVIOaGDV9X7fOO5guCKfBUyOR
 # revenue and profit, last 4 qtrs
-# https://mboum.com/api/v1/qu/quote/income-statement/?symbol=F&apikey=o6eB0qL4XcBX4tHdyrGvt2lDoKcaC0v8WM9HWLnOpr1HjNhkfpV5G8Kj96kg
+# https://mboum.com/api/v1/qu/quote/income-statement/?symbol=F&apikey=o6eB0qL4XcBX4tHXXXXXXXXXXXXWLnOpr1HjNhkpfV5G8Kj96kg
 
 fmpKey = "tuTqK1dbVIOXXXXXXXCKfBUyOR" # https://site.financialmodelingprep.com/developer/docs/dashboard, free account
 simFinKey = '9eb2f5d7-ef8d-XXXXXXXXX-78c4a37c615a' # https://app.simfin.com/data-api, free account mjwaddell
