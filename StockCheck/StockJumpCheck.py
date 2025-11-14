@@ -1,4 +1,5 @@
-import requests, warnings, urllib3, datetime, time, os
+import os, warnings, urllib3
+import datetime, time, requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
@@ -27,6 +28,7 @@ mbkey = 'o6eB04tHdyraC0v8WM9HxxxxxxxxxxxxOpr1HjNhkqL4XcBXfpV5Kj96kg'  # https://
 sskey = '58f134d4b-753e-xxxxxxxxx-04465a37199b'  # https://github.com/yongghongg/stock-symbol
 fmpkey = 'tubVIOaGDVxxxxxxxxxxxTqK1dUygOR'  # https://financialmodelingprep.com/api/v3/economic_calendar
 logtxt = ''
+curtime = str(datetime.datetime.now()).replace(' ','_').replace('-','').replace(':','')[:15]
 
 # this script is part of an hourly task
 if datetime.datetime.now().weekday() > 4:  # only run on weekdays
@@ -41,17 +43,17 @@ if (datetime.datetime.now().hour > 17):  # run at market close (before 5pm)
     print('After 5pm')
     quit()
 
-def printx(*args):
+def printx(*args): # print to screen and log file
     global logtxt
-    print(*[str(x) for x in args])
+    print(*[str(x) for x in args]) # screen
     logtxt += ' '.join([str(x) for x in args]) + '\n'
-    with open('StockJumpCheck.log', 'w') as f:
+    with open('StockJumpCheck_'+curtime+'.log', 'w') as f: # StockJumpCheck_20251010_155438.log
         f.write(logtxt)  # write full log to log file
 
 def rnd2(val):  # round 2 decimal places
     return str(int(val * 100) / 100.0)
 
-def GetAnalystsTarget(sym):
+def GetAnalystsTarget(sym): # one year target
   try:
     url = 'https://www.tipranks.com/stocks/'+sym.lower()+'/forecast'
     printx('GetAnalystsTarget', sym, url)
@@ -73,9 +75,32 @@ def GetAnalystsTarget(sym):
   except Exception as ex:
     printx('Error: GetAnalystsTarget', sym, ex)
     printx(url)
+    printx(src)
     return -1
 
-def GetZacksRank(stk):
+def GetAnalystsTargetMB(sym): # one year target, MBoum
+  try:
+    url = 'https://api.mboum.com/api/v2/markets/stock/price-targets?ticker='+sym.upper()+'&apikey=' + mbkey
+    printx('GetAnalystsTargetMB', sym, url)
+    hdrs = {
+            "User-Agent": "Mozilla/5.0,(Windows NT 10.0; Win64; x64),AppleWebKit/537.36,(KHTML, like Gecko),Chrome/110.0.0.0,Safari/537.36"}
+    rsp = requests.get(url, verify=False).json()
+    if not 'body' in rsp.keys(): return -1 # no data
+    prc = rsp['body']['consensusOverview']['priceTarget']
+    printx(sym, prc)
+    return float(prc)
+  except Exception as ex:
+    printx('Error: GetAnalystsTargetMB', sym, ex)
+    printx(url)
+    printx(rsp)
+    return -1
+
+#for stk in ['goog','msft','aapl','ibm','amzn','nvda','tsm','orcl','avgo','tsla']:
+#    print(GetAnalystsTarget(stk))
+#    sleep(15)
+#quit()
+
+def GetZacksRank(stk): # scrape zacks site
     url = ''
     rank = 0 # default error
     try:
@@ -84,8 +109,8 @@ def GetZacksRank(stk):
             "User-Agent": "Mozilla/5.0,(Windows NT 10.0; Win64; x64),AppleWebKit/537.36,(KHTML, like Gecko),Chrome/110.0.0.0,Safari/537.36"}
 
         rsp = requests.get(url, headers=hdrs, verify=False)
-        # print(rsp.text)
-        ranklst = ['ERROR', 'Strong Buy', 'Buy', 'Hold', 'Sell', 'Strong Sell']
+        # print(rsp.text) # full page
+        ranklst = ['-', 'Strong Buy', 'Buy', 'Hold', 'Sell', 'Strong Sell']
         if '1-Strong' in rsp.text: rank=1
         if '2-Buy' in rsp.text: rank=2
         if '3-Hold' in rsp.text: rank=3
@@ -94,7 +119,7 @@ def GetZacksRank(stk):
         return rank, ranklst[rank]
     except Exception as ex:
         printx('ERROR GetZackRank: ', url, ex)
-        return rank, 'ERROR'
+        return rank, '-'
 
 def GetStockNames(): # stock name\exchange, could probably just run this once, stock list rarely changes
     printx('Get Stock Names...')
@@ -118,13 +143,13 @@ def CreateChartImage(title, x, y, xlabel, ylabel, zeroline, filename, figsize=No
     ax.plot(x,y)
     ax.set(xlabel=xlabel, ylabel=ylabel, title=title)
     ax.grid()
-    if zeroline:
+    if zeroline: # option chart
         ax.axvline(0, color='black') # highlight zero strike pct (at the money)
         ax.axvline(-20, color='seagreen')
         ax.axvline(20, color='seagreen')
     plt.tight_layout()
     # plt.show()
-    fig.savefig(filename) # save to png file
+    fig.savefig(filename) # save to png file for email
     plt.close()
 
 def CreateEarningsChart(title, x1, y1, label1, x2, y2, label2, filename):
@@ -138,7 +163,7 @@ def CreateEarningsChart(title, x1, y1, label1, x2, y2, label2, filename):
     plt.title(title)
     plt.legend()
     plt.axhline(0, color='grey')
-    plt.savefig(filename) # save to png file
+    plt.savefig(filename) # save to png file for email
     # plt.show()
     fig.clf() # clear plot data
     plt.close()
@@ -151,40 +176,46 @@ def GetEarningHistory(stks): # last 4 quarters actual\estimate
         for stk in stks:
             try:
                 print('.', end='', flush=True)
+                # fucking mboum keeps changing API 
                 # https://mboum.com/api/v1/qu/quote/earnings/?symbol=AAPL&apikey=demo
-                url = 'https://mboum.com/api/v1/qu/quote/earnings/?symbol=' + stk + '&apikey=' + mbkey
+                # url = 'https://mboum.com/api/v1/qu/quote/earnings/?symbol=' + stk + '&apikey=' + mbkey
+                url = 'https://api.mboum.com/api/v1/markets/stock/modules?module=earnings&symbol=' + stk + '&apikey=' + mbkey
                 rsp = requests.get(url, verify=False).json()
-                if 'error' in rsp.keys():
-                    printx(f'\nGetEarningHistory {stk} - Error:{rsp["error"]}')
+                if 'success' in rsp.keys(): # success:false
+                    printx(f'\nGetEarningHistory {stk} - Error:{rsp["message"]}')
                     printx(url)
                     continue
-                earnings = rsp["data"]["earningsChart"]["quarterly"] # includes estimate and actual, last 4 qtrs
+                earnings = rsp["body"]["earnings"]["earningsChart"]["quarterly"] # includes estimate and actual, last 4 qtrs
                 tmp = {}
                 for e in earnings:
-                    qtr,yr = e['date'].split('Q')
+                    qtr,yr = e['date'].split('Q') # "4Q2023"
+                    if e['estimate'] == []: e['estimate'] = {'raw':e['actual']['raw']} # standardized earnings?
+                    if e['actual'] == []: e['actual'] = {'raw':e['estimate']['raw']} # standardized earnings
                     tmp[yr+'Q'+qtr] = {'actual': e['actual']['raw'], 'estimate': e['estimate']['raw']}
                 keys = sorted(tmp.keys()) # 4 qtrs, latest last
                 data[stk] = [tmp[k] for k in keys]
             except Exception as ex: # log error and skip stock
                 printx('\nGetEarningHistory', '\n', ex, '\n', url, '\n', stk)
-            time.sleep(.1) # mboum has rate limit
+            time.sleep(.1) # mboum has rate limit (5 req/sec)
         printx(data)
         return data
     except Exception as ex:
         printx('\nGetEarningHistory', '\n', ex, '\n', url, '\n', stk)
 
-def GetStockHistory(sym):  # get history from mboum, basic account
+def GetStockHistory(sym):  # get history from mboum, business account
     try:
       # 1m | 5m | 15m | 30m | 1h | 1d | 1wk | 1mo | 3mo
       iv = '1d'  # 5 yrs data o/h/l/c
       # url='https://mboum.com/api/v1/hi/history/?symbol=F&interval=1d&diffandsplits=true&apikey=demo'
-      url = 'https://mboum.com/api/v1/hi/history/?symbol=' + sym + '&interval=' + iv + '&diffandsplits=true&apikey=' + mbkey
+      # url = 'https://mboum.com/api/v1/hi/history/?symbol=' + sym + '&interval=' + iv + '&diffandsplits=true&apikey=' + mbkey
+      url = 'https://api.mboum.com/api/v1/markets/stock/history/?symbol=' + sym + '&interval=' + iv + '&diffandsplits=true&apikey=' + mbkey
       hdrs = {
           "User-Agent": "Mozilla/5.0,(Windows NT 10.0; Win64; x64),AppleWebKit/537.36,(KHTML, like Gecko),Chrome/110.0.0.0,Safari/537.36"}
       jsn = requests.get(url, verify=False, headers=hdrs).json()
       hist = []
-      for k in jsn['data'].keys():
-          hist.append((int(k), jsn['data'][k]['date'], jsn['data'][k]['open'], jsn['data'][k]['close']))
+      for k in jsn['body'].keys(): # all dates
+          if not k.isnumeric(): continue # "events"
+          hist.append((int(k), jsn['body'][k]['date'], jsn['body'][k]['open'], jsn['body'][k]['close']))
       # sort from latest date
       hist.sort(key=lambda x: x[0])
       return hist
@@ -205,13 +236,13 @@ def GetExpireDates(monthcnt): # min month count [1,6], find next exp date (3rd F
     return datelst
 
 def FloatDict(val, key=None): # fucking MBoum changed number: 'ask': {'raw': 44.85, 'fmt': '44.85'}
-    if type(val) in [int,float,str]:
+    if type(val) in [int, float, str]:
         return float(val)
-    if type(val) == dict:
+    if type(val) == dict: # new api
         if key:
             return float(val[key])
         else:
-            return float(val[list(val.keys())[0]])
+            return float(val[list(val.keys())[0]]) # fmt
     printx('Error: FloatDict: Can\'t convert', val)
     return None
 
@@ -227,27 +258,29 @@ def GetOptionsMB(stk, exp):
             expdate = str(int(datetime.datetime.combine(exp, datetime.datetime.min.time()).replace(
                                  tzinfo=datetime.timezone.utc).timestamp()))
             requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
-            # get option list
-            url = f'https://mboum.com/api/v1/op/option/?symbol={stk}&expiration={expdate}&apikey={mbkey}'
+            # get option list - fucking mboum
+            url = f'https://api.mboum.com/api/v1/markets/options/?symbol={stk}&expiration={expdate}&apikey={mbkey}'
             printx(url)
             hdrs = {
                 "User-Agent": "Mozilla/5.0,(Windows NT 10.0; Win64; x64),AppleWebKit/537.36,(KHTML, like Gecko),Chrome/110.0.0.0,Safari/537.36"}
             rsp = requests.get(url, verify=False, headers=hdrs).json()  # all call options for this symbol
-            stkprice = rsp['data']['optionChain']['result'][0]['quote']['regularMarketPrice']  # realtime
-            stkchgpct = rsp['data']['optionChain']['result'][0]['quote']['regularMarketChangePercent']  # realtime
-            stkchg = rsp['data']['optionChain']['result'][0]['quote']['regularMarketChange']  # realtime
+            stkprice = rsp['body'][0]['quote']['regularMarketPrice']  # realtime
+            stkchgpct = rsp['body'][0]['quote']['regularMarketChangePercent']  # realtime
+            stkchg = rsp['body'][0]['quote']['regularMarketChange']  # realtime
             info = {'stkprice': stkprice, 'stkchgpct': stkchgpct}
             data = {'calls': [], 'puts': []}
             # get option details
-            if type(rsp['data']['optionChain']['result'][0]['options'][0]) is list:
+            if type(rsp['body'][0]['options'][0]) is list:
                 print(stk, exp, '- No options found\n' + url)
                 return None,None
-            for cll in rsp['data']['optionChain']['result'][0]['options'][0]['calls']:
+            # read calls
+            for cll in rsp['body'][0]['options'][0]['calls']:
                 if bool(cll['inTheMoney']): continue  # skip ITM
                 if not 'bid' in cll or FloatDict(cll['bid']) < 0.1: continue  # too far OTM, no price
                 if not 'ask' in cll or FloatDict(cll['ask']) < 0.1: continue
-                delta = cll['change']['raw'] / stkchg # probability of expiring in the money
-                ratio = cll['percentChange']['raw'] / stkchgpct # leverage amount
+                print(cll)
+                delta = FloatDict(cll['change'], 'raw') / stkchg # probability of expiring in the money
+                ratio = FloatDict(cll['percentChange'], 'raw') / stkchgpct # leverage amount
                 # print(cll['change']['raw'], stkchg)
                 data['calls'].append({
                      'strike': FloatDict(cll['strike']),
@@ -256,12 +289,13 @@ def GetOptionsMB(stk, exp):
                      'delta': delta,
                      'ratio': ratio
                 })
-            for put in rsp['data']['optionChain']['result'][0]['options'][0]['puts']:
+            # read puts
+            for put in rsp['body'][0]['options'][0]['puts']:
                 if bool(put['inTheMoney']): continue  # skip ITM
                 if not 'bid' in put or FloatDict(put['bid']) < 0.1: continue  # too far OTM, no price
                 if not 'ask' in put or FloatDict(put['ask']) < 0.1: continue
-                delta = put['change']['raw'] / stkchg # probability of expiring in the money
-                ratio = put['percentChange']['raw'] / stkchgpct # leverage amount
+                delta = FloatDict(put['change'], 'raw') / stkchg # probability of expiring in the money
+                ratio = FloatDict(put['percentChange'], 'raw') / stkchgpct # leverage amount
                 data['puts'].append({
                      'strike': FloatDict(put['strike']),
                      'bid': FloatDict(put['bid']),
@@ -275,6 +309,9 @@ def GetOptionsMB(stk, exp):
     except Exception as ex:
         printx('Error: GetOptionsMB', ex, stk, exp, url)
         return None, None
+
+#print(GetOptionsMB('AGX', date(2025,7,18)))
+#quit()
 
 def GetImageData(filename): # for email
     with open(filename, 'rb') as f:
@@ -292,12 +329,13 @@ def GetMarketDate(daycnt=3):  # 4 market days, includes today
     last, lastd = date.today() + timedelta(days=diff), diff
     return (last, lastd)  # '2022-02-18', 4
 
-def GetEconCalendar(endDate):
+def GetEconCalendar(endDate): # economic events
     fromDate = str(date.today())  # 2023-12-15
     if type(endDate) == datetime.date:
         toDate = str(endDate)  # 2023-12-19
     else:
         toDate = endDate  # string 2023-12-19
+    # FMP is bait and switch, api stopped working. Fuckers.
     url = f'https://financialmodelingprep.com/api/v3/economic_calendar?from={fromDate}&to={toDate}&apikey={fmpkey}'
     data = requests.get(url).json()
     resp = []
@@ -308,17 +346,55 @@ def GetEconCalendar(endDate):
         resp.append([implst.index(d['impact']), d['date'][:10], day, d['event'], '-'])
     return resp
 
+def GetEconCalendarMB(endDate): # economic events, MBoum
+    fromDate = str(date.today())  # 2023-12-15
+    if type(endDate) == datetime.date:
+        toDate = str(endDate)  # 2023-12-19
+    else:
+        toDate = endDate  # string 2023-12-19
+    printx('GetEconCalendarMB', fromDate, toDate)
+    startdt = datetime.date(*[int(v) for v in fromDate.split('-')]) # '2024-1-1'
+    enddt = datetime.date(*[int(v) for v in toDate.split('-')]) # '2024-1-1'
+    daycnt = (enddt-startdt).days+1 # datetime.timedelta(days=7)  inclusive
+    days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']  # 0-6
+    # filter important events
+    srch = ['CPI', 'FOMC', 'PPI', 'PMI', 'Job', 'Index', 'Sentiment', 'Minutes', 'Rate', 'Payrolls', 'Inflation', 'Decision', 'Press', 'Income']
+    resp = []
+    # loop through dates
+    for dt in [startdt+datetime.timedelta(days=n) for n in range(daycnt)]:
+      day = days[dt.weekday()]
+      url = 'https://api.mboum.com/api/v1/markets/calendar/economic_events?date=' + str(dt) + '&apikey=' + mbkey
+      printx(url)
+      for trycnt in [1,2,3]:
+        data = requests.get(url).json()
+        # fucking mboum, no data may be empty day (weekend) or bad data
+        if 'body' in data.keys(): break # else no data returned, fucking mboum
+        sleep(.5) # half second
+      else: # no success
+        printx('No data returned')
+        continue # go to next date
+         
+      for evt in data['body']:
+        if evt['country'] != 'United States': continue # skip other countries
+        en = evt['eventName']
+        if any(s in en for s in srch): # important event
+          entry = ['-', str(dt), day, en, '-']
+          if not entry in resp:
+            resp.append(entry)
+    printx(len(resp), 'events')
+    return resp
+
 def AddEconEvents(): # return html table
     try:
         print(' \n-- Economic Events --')
         end_date = GetMarketDate(daycnt=4)[0]  # 4 market days, includes today
         print(end_date)
-        evts = GetEconCalendar(end_date)
-        starred = list(filter(lambda e: e[0] == 1, evts)) # important events
-        starred.sort(key=lambda ee: ee[1])
-        print(starred)
+        evts = GetEconCalendarMB(end_date)
+#        starred = list(filter(lambda e: e[0] == 1, evts)) # important events, MBoum does not rate events
+#        starred.sort(key=lambda ee: ee[1])
+#        print(starred)
         tbl = '<br/><br/><b>Economic Events</b>\n<table>'
-        for r in starred:
+        for r in evts:
             tbl += f'\n<tr><td>{r[1]}</td><td>&nbsp;&nbsp;&nbsp;{r[2]}</td><td>&nbsp;&nbsp;&nbsp;{r[3]}</td></tr>'
         tbl += '\n</table>'
         return tbl
@@ -326,17 +402,89 @@ def AddEconEvents(): # return html table
         printx('ERROR: AddEconEvents: ', ex)
         return '<br/><br/><b>Economic Events</b>\n<table><tr><td>Economic Calendar: ERROR</td></tr></table>'
 
+def FmtValue(val):
+    valStr = str(val)
+    if len(valStr) > 9:
+        return str(rnd2(val/1000000000)) + 'B'
+    if len(valStr) > 6:
+        return str(rnd2(val/1000000)) + 'M'
+    return str(rnd2(val/1000)) + 'K'
+
+def GetExtraData(sym):
+    rspBS = rspCF = rspIS = ''
+    try:
+        valDict = {}
+        colorDict = {}
+        urlBS = 'https://api.mboum.com/v1/markets/stock/modules?ticker=' + sym + '&module=balance-sheet-v2&timeframe=quarterly&apikey=' + mbkey
+        urlCF = 'https://api.mboum.com/v1/markets/stock/modules?ticker=' + sym + '&module=cashflow-statement-v2&timeframe=quarterly&apikey=' + mbkey
+        urlIS = 'https://api.mboum.com/v1/markets/stock/modules?ticker=' + sym + '&module=income-statement-v2&timeframe=quarterly&apikey=' + mbkey
+        printx('urlBS', urlBS)
+        printx('urlCF', urlCF)
+        printx('urlIS', urlIS)
+        rspBS = requests.get(urlBS, verify=False).json()
+        rspCF = requests.get(urlCF, verify=False).json()
+        rspIS = requests.get(urlIS, verify=False).json()
+
+        maxDate = max([k for k in rspIS['body']['profitMargin'].keys()])  # 2025-07-27  should be same for all
+
+        valDict['Debt'] = rspBS['body']['debt'][maxDate]
+        valDict['Cash'] = rspBS['body']['cashneq'][maxDate]
+        valDict['CashFlow'] = rspCF['body']['fcf'][maxDate]
+        valDict['LiabilitiesST'] = rspBS['body']['currentLiabilities'][maxDate]
+        valDict['AssetsST'] = rspBS['body']['assetsc'][maxDate]
+        valDict['LiabilitiesLT'] = rspBS['body']['liabilities'][maxDate] - rspBS['body']['currentLiabilities'][maxDate]
+        valDict['AssetsLT'] = rspBS['body']['assets'][maxDate] - rspBS['body']['assetsc'][maxDate]
+        valDict['ProfitMargin'] = int(rnd2(rspIS['body']['profitMargin'][maxDate]*100).split('.')[0])
+        sleep(0.1)
+        return valDict
+    except Exception as ex:
+        printx('GetExtraData Error:', sym, ex)
+        printx('rspBS\n', rspBS)
+        printx('rspCF\n', rspCF)
+        printx('rspIS\n', rspIS)
+        return None
+
+def CreateFinancialsTable(sym):
+    valDict = GetExtraData(sym)
+    if not valDict:
+        return '' # no data
+    colors = {}
+    for k in valDict.keys():
+        colors[k] = 'black'  # default
+    if valDict['ProfitMargin'] < 5: colors['ProfitMargin'] = 'red'
+    if valDict['ProfitMargin'] > 20: colors['ProfitMargin'] = 'green'
+    if valDict['Cash'] < valDict['Debt']: colors['Cash'] = 'red'
+    if valDict['Cash'] > valDict['Debt']: colors['Cash'] = 'green'
+    if valDict['CashFlow'] > valDict['Debt']: colors['CashFlow'] = 'green'
+    if valDict['CashFlow'] < 0: colors['CashFlow'] = 'red'
+    if valDict['AssetsLT'] < valDict['LiabilitiesLT']: colors['AssetsLT'] = 'red'
+    if valDict['AssetsLT'] > valDict['LiabilitiesLT']: colors['AssetsLT'] = 'green'
+    if valDict['AssetsST'] < valDict['LiabilitiesST']: colors['AssetsST'] = 'red'
+    if valDict['AssetsST'] > valDict['LiabilitiesST']: colors['AssetsST'] = 'green'
+    hdrRow = '<tr>'
+    datRow = '<tr>'
+    for k in valDict.keys():
+        hdrRow += '<th>&nbsp;' + k + '&nbsp;</th>'
+        if k == 'ProfitMargin':
+            datRow += f'<td align="center"><font color={colors[k]}>&nbsp;{str(valDict[k])}%&nbsp;</font></td>'  # 27%
+        else:
+            datRow += f'<td align="center"><font color={colors[k]}>&nbsp;{FmtValue(valDict[k])}&nbsp;</font></td>'  # 14.67B
+    hdrRow += '</tr>\n'
+    datRow += '</tr>\n'
+    return f'\n<table border="1" cellspacing="0" cellpadding="2">\n{hdrRow}{datRow}</table>\n'
+
 def SendEmail(html, subj, images): # send email with chart images
     printx('Sending email...')
 
-    strFrom = 'michael.waddell@xxx.com'
-    strTo = 'michael.waddell@xxx.com'
+    strFrom = 'michael.waddell @ aon.com'
+    strTo = 'michael.waddell @ aon.com' # comma separated, will convert to list, BCC by default
+    # strTo =  'michael.waddell @ aon.com, mjwaddell @ gmail.com' # comma separated, will convert to list
 
     # Create the root message and fill in the from, to, and subject headers
     msgRoot = MIMEMultipart('related')
     msgRoot['Subject'] = subj
     msgRoot['From'] = strFrom
-    msgRoot['To'] = strTo
+    msgRoot['To'] = strFrom # only show sender, other recipients are BCC
     msgRoot.preamble = 'This is a multi-part message in MIME format.'
 
     # Encapsulate the plain and HTML versions of the message body in an
@@ -362,8 +510,11 @@ def SendEmail(html, subj, images): # send email with chart images
     import smtplib
     smtp = smtplib.SMTP()
     smtp.connect('smtprelayna.aon.net')
-    smtp.sendmail(strFrom, strTo, msgRoot.as_string())
+    smtp.sendmail(strFrom, [s.strip() for s in strTo.split(',')], msgRoot.as_string())
     smtp.quit()
+    
+#SendEmail('<html><body>email multi test</body></html>', 'email test', [])
+#quit()    
 
 #  FinViz scraper functions
 def GetFinVizStocksCmt(filters=None):  # scrape FinViz comment block
@@ -381,7 +532,7 @@ def GetFinVizStocksCmt(filters=None):  # scrape FinViz comment block
     stks = []  # stock tickers
     prcs = []  # stock prices
     total = 0  # total stock count
-    while True:
+    while True: # read every page in chart
         url = f'https://finviz.com/screener.ashx?v=111&f={filters}&r={pg}'
         # url = 'https://finviz.com/screener.ashx?v=111&f=sh_opt_option,sh_price_o50,ta_volatility_mo3&r=1'
         print('#', end='')
@@ -453,7 +604,9 @@ def GetFinVizStocksTbl(filters=None):  # FinViz, scrape main table
                 stks.append(GetRowData(row))
                 cnt += 1
         if len(stks) >= total:
+            printx(url+'\nFinViz stocks:\n' + '\n'.join([str(stk) for stk in stks]))
             print('')
+            # stks = [stk for stk in stks if 'L' in stk['Ticker']]  # filter for test
             return stks
         sleep(0.1)  # must pause between pages
 
@@ -465,19 +618,21 @@ def CalcOptionRatio(stk, xpct, y, pct): # call/put price at pct point
             return 0 # option range too small
         putpct = callpct = 0
         for idx in range(len(xpct)-1):
+            # put at -20%
             if xpct[idx] <= -pct <= xpct[idx+1]:
                 putpct = (-pct-xpct[idx])/(xpct[idx+1]-xpct[idx]) * (y[idx+1]-y[idx]) + y[idx]
+            # call at +20%
             if xpct[idx] <= pct <= xpct[idx+1]:
                 callpct = (pct-xpct[idx])/(xpct[idx+1]-xpct[idx]) * (y[idx+1]-y[idx]) + y[idx]
             print(putpct, callpct)
             if putpct and callpct: break # found both
-        return callpct/(putpct+.00001)
+        return callpct/(putpct+.00001) # prevent div/zero error
     except Exception as ex:
         printx('ERROR: CalcOptionRatio', stk, ex)
         return 0
 
-
 filters = [  # finviz, initial filter for stocks, not used
+    # https://finviz.com/screener.ashx?v=111&f=ta_highlow52w_nh,ta_sma20_pa10,fa_netmargin_pos,fa_epsyoy_pos&r=1
     'ta_highlow52w_nh',  # 52 week high
     'ta_sma20_pa10',     # price 10% above SMA 20 day
     'fa_netmargin_pos',  # positive net profit margin
@@ -515,7 +670,7 @@ try:
 
     baselink = 'https://www.google.com/finance/quote/' # for quote link in email
     stock_list = [s['Ticker'] for s in stock_list] # just tickers
-    earnings_all = GetEarningHistory(stock_list) # from mbaum, last 4 quarters
+    earnings_all = GetEarningHistory(stock_list) # from mboum, last 4 quarters
     earnings = {}
     for e in earnings_all.keys():
         printx(e)
@@ -585,6 +740,8 @@ try:
         images.append(stk + '_Earnings.png') # for email
         # add images to email
         html += f'<br/><img src="cid:{stk}"><br/>\n'
+        valDict = GetExtraData(stk) # financial data
+        html += CreateFinancialsTable(stk) # assets/liabilities
         if stk in optionstks: # if stock has options, add option chart
             images.append(stk + '_OptionSpread.png')  # for email
             html += f'<br/><img src="cid:{stk}_OptionSpread"><br/>\n'
@@ -597,10 +754,10 @@ try:
             html += f'<b><br/>Zacks Rank: <font color=green>{rnk[0]} {rnk[1]}</font><br/></b>\n'
         elif rnk[0] > 3: # 4,5 strong\sell
             html += f'<b><br/>Zacks Rank: <font color=red>{rnk[0]} {rnk[1]}</font><br/></b>\n'
-        tgt = GetAnalystsTarget(stk) # target price 1 yr
+        tgt = GetAnalystsTargetMB(stk) # target price 1 yr
         price = stkdict[stk]['stkprice']
-        if tgt == -1:
-            html += f'<b><br/>Analysts Target: None<br/></b>\n'  # black
+        if price <= 0 or tgt == -1:
+            html += f'<b><br/>Analysts Target: -<br/></b>\n'  # black
         elif tgt > price:
             pct = (tgt-price)/price * 100.0
             html += f'<b><br/>Analysts Target: <font color=green>{tgt}&nbsp;&nbsp;&nbsp;{rnd2(pct)}%</font><br/></b>\n'
@@ -608,8 +765,9 @@ try:
             pct = (tgt-price)/price * 100.0
             html += f'<b><br/>Analysts Target: <font color=red>{tgt}&nbsp;&nbsp;&nbsp;{rnd2(pct)}%</font><br/></b>\n'
         html += f'<br/><a href="{baselink}{stk}:{GetStockName(stk)["exchange"]}" style="font-size:20px;">GoogleFinance {stk}</a><br/>\n'
-        stkcnt += 1
-#    html += AddEconEvents()  # no longer works
+        stkcnt+=1
+        #sleep(15) # 15 secs, needed for tip ranks - GetAnalystsTarget
+    html += AddEconEvents()
     html += '</center></body></html>'
     printx(html)
     if len(stock_list):
